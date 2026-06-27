@@ -1,0 +1,9 @@
+services:
+  nusaquest-rpg:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nusaquest_rpg_web
+    ports:
+      - "8080:80"
+    restart: always

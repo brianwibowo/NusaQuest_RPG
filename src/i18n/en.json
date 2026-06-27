@@ -1,0 +1,156 @@
+{
+  "app": {
+    "name": "NusaQuest",
+    "tagline": "Explore Nusantara, Become the Legend"
+  },
+
+  "nav": {
+    "home": "Home",
+    "explore": "Explore",
+    "quests": "Quests",
+    "rewards": "Rewards",
+    "profile": "Profile"
+  },
+
+  "onboarding": {
+    "welcome": "Welcome, Explorer!",
+    "intro": "You have been chosen to revive the forgotten Local Heritage Map. Explore destinations, complete missions, and unlock hidden stories of Nusantara.",
+    "enter_name": "Enter your adventurer name",
+    "choose_character": "Choose Character",
+    "choose_character_desc": "Each character has unique powers. Pick one that matches your adventure style!",
+    "start_adventure": "Start Adventure",
+    "select": "Select"
+  },
+
+  "home": {
+    "greeting": "Hello, {{name}}!",
+    "active_quests": "Active Quests",
+    "no_active_quests": "No active quests yet. Explore the map to find missions!",
+    "stats": "Statistics",
+    "quests_completed": "Quests Completed",
+    "badges_earned": "Badges Earned",
+    "quick_actions": "Quick Actions",
+    "explore_map": "Explore Map",
+    "view_quests": "View Quests"
+  },
+
+  "quest": {
+    "title": "Quests",
+    "all": "All",
+    "start": "Start Quest",
+    "continue": "Continue",
+    "completed": "Completed",
+    "locked": "Locked",
+    "level_required": "Level {{level}} required",
+    "objectives": "Objectives",
+    "rewards": "Rewards",
+    "difficulty": "Difficulty",
+    "easy": "Easy",
+    "medium": "Medium",
+    "hard": "Hard",
+    "duration": "Duration",
+    "location": "Location",
+    "complete_quest": "Complete Quest",
+    "quest_completed": "Quest Completed! 🎉",
+    "xp_earned": "+{{amount}} XP",
+    "points_earned": "+{{amount}} Points"
+  },
+
+  "battle": {
+    "title": "Challenge",
+    "question": "Question {{current}} of {{total}}",
+    "time_remaining": "Time Remaining",
+    "correct": "Correct! ✅",
+    "wrong": "Wrong ❌",
+    "result": "Challenge Result",
+    "passed": "You Passed! 🎉",
+    "failed": "Try Again 💪",
+    "score": "Score: {{correct}}/{{total}}",
+    "next": "Next",
+    "finish": "Finish"
+  },
+
+  "character": {
+    "title": "Character",
+    "level": "Level",
+    "xp": "XP",
+    "points": "Points",
+    "gold": "Gold",
+    "special_power": "Special Power",
+    "badges": "Badges",
+    "no_badges": "No badges yet"
+  },
+
+  "reward": {
+    "title": "Rewards",
+    "badges": "Badges",
+    "vouchers": "Vouchers",
+    "collectibles": "Digital Collectibles",
+    "certificates": "Certificates",
+    "redeem": "Redeem",
+    "obtained": "Obtained",
+    "cost": "{{amount}} Points"
+  },
+
+  "story": {
+    "title": "Stories",
+    "locked": "Complete the quest to unlock this story",
+    "read": "Read Story",
+    "category": {
+      "budaya": "Culture",
+      "sejarah": "History",
+      "legenda": "Legend",
+      "kuliner": "Culinary",
+      "lingkungan": "Environment"
+    }
+  },
+
+  "umkm": {
+    "title": "Local UMKM",
+    "products": "Products",
+    "rating": "Rating",
+    "voucher_available": "Voucher Available",
+    "visit": "Visit",
+    "category": {
+      "kuliner": "Culinary",
+      "suvenir": "Souvenirs",
+      "kerajinan": "Handicrafts",
+      "fashion": "Fashion",
+      "jasa": "Services"
+    }
+  },
+
+  "map": {
+    "title": "Explore Map",
+    "filter": "Filter",
+    "all_locations": "All Locations",
+    "view_quests": "View Quests"
+  },
+
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "Rank",
+    "player": "Player",
+    "you": "You"
+  },
+
+  "profile": {
+    "title": "Profile",
+    "journey_history": "Journey History",
+    "total_xp": "Total XP",
+    "total_points": "Total Points",
+    "reset_game": "Reset Game",
+    "reset_confirm": "Are you sure you want to reset all progress?",
+    "language": "Language"
+  },
+
+  "common": {
+    "back": "Back",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "loading": "Loading...",
+    "level_up": "Level Up! 🎉",
+    "new_level": "Level {{level}} — {{name}}"
+  }
+}

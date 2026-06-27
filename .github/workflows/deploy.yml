@@ -1,0 +1,88 @@
+name: Build and Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  # 1. Build and push image to GitHub Container Registry (GHCR)
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 2. Connect to AlmaLinux VPS via SSH and deploy
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to AlmaLinux VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            # 1. Make sure deployment directory exists
+            mkdir -p ~/nusaquest-deploy
+            cd ~/nusaquest-deploy
+
+            # 2. Login to GitHub Container Registry on VPS
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 3. Create or Update docker-compose.yml file dynamically on VPS
+            cat << 'EOF' > docker-compose.yml
+            services:
+              nusaquest-rpg:
+                image: ghcr.io/${{ github.repository }}:latest
+                container_name: nusaquest_rpg_web
+                ports:
+                  - "8080:80"
+                restart: always
+            EOF
+
+            # 4. Pull the latest image and restart containers
+            docker compose pull
+            docker compose down
+            docker compose up -d
+
+            # 5. Clean up old unused images
+            docker image prune -f

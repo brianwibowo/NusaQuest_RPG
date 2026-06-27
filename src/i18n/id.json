@@ -1,0 +1,156 @@
+{
+  "app": {
+    "name": "NusaQuest",
+    "tagline": "Jelajahi Nusantara, Jadilah Legendanya"
+  },
+
+  "nav": {
+    "home": "Beranda",
+    "explore": "Jelajahi",
+    "quests": "Misi",
+    "rewards": "Hadiah",
+    "profile": "Profil"
+  },
+
+  "onboarding": {
+    "welcome": "Selamat Datang, Penjelajah!",
+    "intro": "Kamu terpilih untuk menghidupkan kembali Peta Warisan Lokal yang mulai terlupakan. Jelajahi destinasi, selesaikan misi, dan buka cerita tersembunyi Nusantara.",
+    "enter_name": "Masukkan nama petualangmu",
+    "choose_character": "Pilih Karakter",
+    "choose_character_desc": "Setiap karakter memiliki kekuatan unik. Pilih yang sesuai gaya petualanganmu!",
+    "start_adventure": "Mulai Petualangan",
+    "select": "Pilih"
+  },
+
+  "home": {
+    "greeting": "Halo, {{name}}!",
+    "active_quests": "Misi Aktif",
+    "no_active_quests": "Belum ada misi aktif. Jelajahi peta untuk menemukan misi!",
+    "stats": "Statistik",
+    "quests_completed": "Misi Selesai",
+    "badges_earned": "Badge Diperoleh",
+    "quick_actions": "Aksi Cepat",
+    "explore_map": "Jelajahi Peta",
+    "view_quests": "Lihat Misi"
+  },
+
+  "quest": {
+    "title": "Misi",
+    "all": "Semua",
+    "start": "Mulai Misi",
+    "continue": "Lanjutkan",
+    "completed": "Selesai",
+    "locked": "Terkunci",
+    "level_required": "Level {{level}} diperlukan",
+    "objectives": "Tujuan",
+    "rewards": "Hadiah",
+    "difficulty": "Kesulitan",
+    "easy": "Mudah",
+    "medium": "Sedang",
+    "hard": "Sulit",
+    "duration": "Durasi",
+    "location": "Lokasi",
+    "complete_quest": "Selesaikan Misi",
+    "quest_completed": "Misi Selesai! 🎉",
+    "xp_earned": "+{{amount}} XP",
+    "points_earned": "+{{amount}} Poin"
+  },
+
+  "battle": {
+    "title": "Tantangan",
+    "question": "Pertanyaan {{current}} dari {{total}}",
+    "time_remaining": "Sisa Waktu",
+    "correct": "Benar! ✅",
+    "wrong": "Salah ❌",
+    "result": "Hasil Tantangan",
+    "passed": "Kamu Berhasil! 🎉",
+    "failed": "Coba Lagi 💪",
+    "score": "Skor: {{correct}}/{{total}}",
+    "next": "Selanjutnya",
+    "finish": "Selesai"
+  },
+
+  "character": {
+    "title": "Karakter",
+    "level": "Level",
+    "xp": "XP",
+    "points": "Poin",
+    "gold": "Gold",
+    "special_power": "Kekuatan Khusus",
+    "badges": "Badge",
+    "no_badges": "Belum ada badge"
+  },
+
+  "reward": {
+    "title": "Hadiah",
+    "badges": "Badge",
+    "vouchers": "Voucher",
+    "collectibles": "Koleksi Digital",
+    "certificates": "Sertifikat",
+    "redeem": "Tukar",
+    "obtained": "Diperoleh",
+    "cost": "{{amount}} Poin"
+  },
+
+  "story": {
+    "title": "Cerita",
+    "locked": "Selesaikan misi untuk membuka cerita ini",
+    "read": "Baca Cerita",
+    "category": {
+      "budaya": "Budaya",
+      "sejarah": "Sejarah",
+      "legenda": "Legenda",
+      "kuliner": "Kuliner",
+      "lingkungan": "Lingkungan"
+    }
+  },
+
+  "umkm": {
+    "title": "UMKM Lokal",
+    "products": "Produk",
+    "rating": "Rating",
+    "voucher_available": "Voucher Tersedia",
+    "visit": "Kunjungi",
+    "category": {
+      "kuliner": "Kuliner",
+      "suvenir": "Suvenir",
+      "kerajinan": "Kerajinan",
+      "fashion": "Fashion",
+      "jasa": "Jasa"
+    }
+  },
+
+  "map": {
+    "title": "Peta Jelajah",
+    "filter": "Filter",
+    "all_locations": "Semua Lokasi",
+    "view_quests": "Lihat Misi"
+  },
+
+  "leaderboard": {
+    "title": "Peringkat",
+    "rank": "Peringkat",
+    "player": "Pemain",
+    "you": "Kamu"
+  },
+
+  "profile": {
+    "title": "Profil",
+    "journey_history": "Riwayat Perjalanan",
+    "total_xp": "Total XP",
+    "total_points": "Total Poin",
+    "reset_game": "Reset Permainan",
+    "reset_confirm": "Yakin ingin mereset semua progres?",
+    "language": "Bahasa"
+  },
+
+  "common": {
+    "back": "Kembali",
+    "cancel": "Batal",
+    "confirm": "Konfirmasi",
+    "close": "Tutup",
+    "loading": "Memuat...",
+    "level_up": "Naik Level! 🎉",
+    "new_level": "Level {{level}} — {{name}}"
+  }
+}
