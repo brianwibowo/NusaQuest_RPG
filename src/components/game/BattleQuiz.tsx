@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { useTranslation } from "react-i18next";
 import type { Battle, AppLanguage } from "@/types";
 import { Award, Trophy, Timer, CheckCircle2, XCircle } from "lucide-react";
+import { audioManager } from "@/lib/audio";
+import { hapticsManager } from "@/lib/haptics";
 
 interface BattleQuizProps {
   battle: Battle;
@@ -22,6 +24,7 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
   const [isAnswered, setIsAnswered] = useState(false);
   const [timeLeft, setTimeLeft] = useState(battle.timeLimit || 60);
   const [battleOver, setBattleOver] = useState(false);
+  const [isShaking, setIsShaking] = useState(false);
 
   const question = battle.questions[currentIdx];
   const progress = Math.round((currentIdx / battle.questions.length) * 100);
@@ -42,16 +45,41 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
     return () => clearInterval(timer);
   }, [timeLeft, battleOver]);
 
+  // Handle final result sound effect and haptic when quiz finishes
+  useEffect(() => {
+    if (battleOver) {
+      const passed = score >= battle.passingScore;
+      if (passed) {
+        audioManager.playLevelUp(); // Plays short fanfare
+        hapticsManager.triggerLevelUp();
+      } else {
+        audioManager.playError();
+        hapticsManager.triggerError();
+      }
+    }
+  }, [battleOver, score, battle.passingScore]);
+
   const handleSelectOption = (idx: number) => {
     if (isAnswered) return;
     setSelectedAns(idx);
     setIsAnswered(true);
+
     if (idx === question.correctIndex) {
       setScore((prev) => prev + 1);
+      audioManager.playSuccess();
+      hapticsManager.triggerSuccess();
+    } else {
+      audioManager.playError();
+      hapticsManager.triggerError();
+      // Trigger CSS shaking animation
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
     }
   };
 
   const handleNext = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
     setIsAnswered(false);
     setSelectedAns(null);
     if (currentIdx < battle.questions.length - 1) {
@@ -61,9 +89,21 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
     }
   };
 
+  const handleCancelClick = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
+    onCancel();
+  };
+
   const handleFinish = () => {
     const passed = score >= battle.passingScore;
     onFinish(score, passed);
+  };
+
+  const handleFinishClick = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
+    handleFinish();
   };
 
   // Render Layar Hasil Kuis
@@ -102,11 +142,11 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
         </CardContent>
         <CardFooter className="flex justify-center gap-3 pt-2">
           {!passed && (
-            <Button variant="outline" size="sm" onClick={onCancel} className="text-xs">
+            <Button variant="outline" size="sm" onClick={handleCancelClick} className="text-xs">
               {t("common.close")}
             </Button>
           )}
-          <Button size="sm" onClick={handleFinish} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button size="sm" onClick={handleFinishClick} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
             {t("battle.finish")}
           </Button>
         </CardFooter>
@@ -115,7 +155,7 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
   }
 
   return (
-    <Card className="border-slate-100 bg-white shadow-md">
+    <Card className={`border-slate-100 bg-white shadow-md transition-all ${isShaking ? "animate-shake border-red-300 shadow-red-50" : ""}`}>
       <CardHeader className="pb-3 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs text-slate-500">
           <span className="font-semibold text-emerald-600 uppercase tracking-wider">{battle.title[lang]}</span>
@@ -139,7 +179,7 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
         {/* Pilihan Jawaban */}
         <div className="flex flex-col gap-2 pt-1">
           {question.options.map((opt, idx) => {
-            let btnStyle = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700";
+            let btnStyle = "border-slate-200 bg-white hover:bg-slate-50 text-slate-700 cursor-pointer";
             let icon = null;
 
             if (isAnswered) {
@@ -183,7 +223,7 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
 
       {isAnswered && (
         <CardFooter className="flex justify-end pt-0 pb-4 pr-6">
-          <Button size="sm" onClick={handleNext} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
+          <Button size="sm" onClick={handleNext} className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer">
             {t("battle.next")}
           </Button>
         </CardFooter>

@@ -1,24 +1,40 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "@/context/PlayerContext";
-import { Globe, Menu, BookOpen, ShoppingBag, Trophy, Home, User, Swords, Gift, Map } from "lucide-react";
+import { Globe, Menu, BookOpen, ShoppingBag, Trophy, Home, User, Swords, Gift, Map, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { getLevelDefinition } from "@/lib/xp";
 import { Link, useLocation } from "react-router-dom";
+import { audioManager } from "@/lib/audio";
+import { hapticsManager } from "@/lib/haptics";
 
 export default function Header() {
   const { t, i18n } = useTranslation();
   const { player, dispatch } = usePlayer();
   const location = useLocation();
+  const [isMuted, setIsMuted] = useState(audioManager.getMutedState());
 
   const levelDef = getLevelDefinition(player.level);
   const levelName = player.language === "id" ? levelDef.name.id : levelDef.name.en;
 
   const toggleLanguage = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
     const newLang = player.language === "id" ? "en" : "id";
     i18n.changeLanguage(newLang);
     dispatch({ type: "SET_LANGUAGE", language: newLang });
+  };
+
+  const toggleMute = () => {
+    const nextMute = audioManager.toggleMute();
+    setIsMuted(nextMute);
+    // Trigger small click sound/haptic if not muted
+    if (!nextMute) {
+      audioManager.playClick();
+    }
+    hapticsManager.triggerClick();
   };
 
   const menuItems = [
@@ -79,13 +95,22 @@ export default function Header() {
           </Link>
         </div>
 
-        {/* Level + Language Toggle */}
+        {/* Level + Language + Audio Toggle */}
         <div className="flex items-center gap-2">
           {player.hasCompletedOnboarding && (
             <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 border-slate-100 bg-slate-100 hover:bg-slate-100 text-slate-600">
               Lv.{player.level} · {levelName}
             </Badge>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleMute}
+            className="h-8 w-8 text-slate-600 hover:text-slate-900"
+            title={isMuted ? "Unmute" : "Mute"}
+          >
+            {isMuted ? <VolumeX className="h-4 w-4 text-red-500" /> : <Volume2 className="h-4 w-4 text-emerald-600" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

@@ -3,9 +3,11 @@
  * Defines all routes and wraps the app with providers.
  */
 
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { usePlayer } from "@/context/PlayerContext";
 import AppShell from "@/components/layout/AppShell";
+import { audioManager } from "@/lib/audio";
 
 // Pages
 import OnboardingPage from "@/pages/OnboardingPage";
@@ -32,6 +34,18 @@ function RequireOnboarding({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { player } = usePlayer();
+
+  useEffect(() => {
+    // Only play BGM if user has completed onboarding (so BGM starts in active game)
+    if (player.hasCompletedOnboarding) {
+      audioManager.playBgm();
+    }
+    return () => {
+      audioManager.stopBgm();
+    };
+  }, [player.hasCompletedOnboarding]);
+
   return (
     <BrowserRouter>
       <Routes>

@@ -5,6 +5,7 @@ import { QUESTS } from "@/data/quests";
 import { BATTLES } from "@/data/battles";
 import { STORIES } from "@/data/stories";
 import { REWARDS } from "@/data/rewards";
+import { LOCATIONS } from "@/data/locations";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,7 +15,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getQuestTypeColor, getQuestTypeLabel } from "@/lib/quest";
 import BattleQuiz from "@/components/game/BattleQuiz";
 import { getLevelDefinition } from "@/lib/xp";
-import { ArrowLeft, Clock, Award, Trophy, Play, ShieldAlert } from "lucide-react";
+import { calculateDistance } from "@/lib/geo";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { audioManager } from "@/lib/audio";
+import { hapticsManager } from "@/lib/haptics";
+import { ArrowLeft, Clock, Award, Trophy, Play, ShieldAlert, MapPin, CheckCircle, Navigation } from "lucide-react";
 
 export default function QuestDetailPage() {
   const { t } = useTranslation();
@@ -27,6 +32,12 @@ export default function QuestDetailPage() {
   const [battleActive, setBattleActive] = useState(false);
   const [showLevelUpDialog, setShowLevelUpDialog] = useState(false);
   const [justLeveledUpTo, setJustLeveledUpTo] = useState<number | null>(null);
+
+  // Real-time Geolocation hook
+  const geo = useGeolocation();
+  // State for testing/simulating being at the destination
+  const [isSimulated, setIsSimulated] = useState(false);
+  const [distanceInfo, setDistanceInfo] = useState<string | null>(null);
 
   if (!quest) {
     return (
@@ -46,6 +57,8 @@ export default function QuestDetailPage() {
 
   // 1. Start Quest
   const handleStartQuest = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
     dispatch({ type: "START_QUEST", questId: quest.id });
   };
 
@@ -64,6 +77,58 @@ export default function QuestDetailPage() {
     const allDone = updatedObjectives.every((obj) => obj.completed);
     if (allDone) {
       handleCompleteQuest();
+    }
+  };
+
+  // GPS check-in validator
+  const handleCheckGpsLocation = (objId: string) => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
+
+    const destination = LOCATIONS.find((l) => l.id === quest.locationId);
+    if (!destination) return;
+
+    let userLat = geo.coordinates?.lat || 0;
+    let userLng = geo.coordinates?.lng || 0;
+
+    // Use mock coordinates if simulation is turned on
+    if (isSimulated) {
+      userLat = destination.latitude;
+      userLng = destination.longitude;
+    }
+
+    if (!isSimulated && (!geo.coordinates || !geo.loaded)) {
+      alert(player.language === "id" 
+        ? "Mendapatkan lokasi GPS Anda... Pastikan izin lokasi aktif." 
+        : "Fetching your GPS location... Please ensure location permissions are enabled."
+      );
+      return;
+    }
+
+    const distanceMeters = calculateDistance(
+      userLat,
+      userLng,
+      destination.latitude,
+      destination.longitude
+    );
+
+    if (distanceMeters <= 100) {
+      // Success check-in!
+      audioManager.playSuccess();
+      hapticsManager.triggerSuccess();
+      handleCompleteObjective(objId, true);
+      setDistanceInfo(player.language === "id" 
+        ? "Check-in berhasil! Anda berada di lokasi destinasi." 
+        : "Check-in successful! You are at the destination."
+      );
+    } else {
+      audioManager.playError();
+      hapticsManager.triggerError();
+      const distanceKm = (distanceMeters / 1000).toFixed(2);
+      setDistanceInfo(player.language === "id"
+        ? `Jarak Anda ${distanceKm} km dari lokasi. Silakan mendekat (<100m) untuk check-in!`
+        : `You are ${distanceKm} km away. Please move closer (<100m) to check-in!`
+      );
     }
   };
 
@@ -97,6 +162,53 @@ export default function QuestDetailPage() {
     if (quest.reward.collectibleId) {
       dispatch({ type: "OBTAIN_REWARD", rewardId: quest.reward.collectibleId });
     }
+
+    // Trigger Success Audio & Visual celebration (Confetti!)
+    import("canvas-confetti").then((module) => {
+      const confetti = module.default;
+      
+      if (willLevelUp) {
+        // Grand Level-up Celebration Confetti
+        audioManager.playLevelUp();
+        hapticsManager.triggerLevelUp();
+        
+        // Multi-burst confetti
+        const duration = 2.5 * 1000;
+        const end = Date.now() + duration;
+
+        const frame = () => {
+          confetti({
+            particleCount: 5,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0, y: 0.8 },
+            colors: ["#10b981", "#fbbf24", "#3b82f6"]
+          });
+          confetti({
+            particleCount: 5,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1, y: 0.8 },
+            colors: ["#10b981", "#fbbf24", "#3b82f6"]
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        };
+        frame();
+      } else {
+        // Standard Quest Completed Confetti (single burst)
+        audioManager.playSuccess();
+        hapticsManager.triggerSuccess();
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.7 },
+          colors: ["#10b981", "#fbbf24"]
+        });
+      }
+    });
 
     if (willLevelUp) {
       setJustLeveledUpTo(player.level + 1);
@@ -183,42 +295,101 @@ export default function QuestDetailPage() {
             </h3>
             
             <div className="flex flex-col gap-2.5">
-              {quest.objectives.map((obj) => (
-                <div key={obj.id} className="flex items-start gap-3 p-2 bg-slate-50/50 rounded-lg border border-slate-100">
-                  <Checkbox
-                    id={obj.id}
-                    checked={isCompleted || obj.completed}
-                    disabled={isCompleted || !isActive || obj.type === "answer_quiz"}
-                    onCheckedChange={(checked: boolean | "indeterminate") => handleCompleteObjective(obj.id, !!checked)}
-                    className="mt-0.5 border-slate-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <label
-                      htmlFor={obj.id}
-                      className={`text-xs font-semibold text-slate-700 leading-snug cursor-pointer select-none ${
-                        (isCompleted || obj.completed) ? "line-through text-slate-400" : ""
-                      }`}
-                    >
-                      {obj.description[lang]}
-                    </label>
+              {quest.objectives.map((obj) => {
+                const isVisitLocation = obj.type === "visit_location";
+                return (
+                  <div key={obj.id} className="flex items-start gap-3 p-2.5 bg-slate-50/50 rounded-lg border border-slate-100">
+                    <Checkbox
+                      id={obj.id}
+                      checked={isCompleted || obj.completed}
+                      disabled={isCompleted || !isActive || obj.type === "answer_quiz" || isVisitLocation}
+                      onCheckedChange={(checked: boolean | "indeterminate") => handleCompleteObjective(obj.id, !!checked)}
+                      className="mt-0.5 border-slate-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                    />
+                    <div className="flex-1 space-y-1">
+                      <label
+                        htmlFor={obj.id}
+                        className={`text-xs font-semibold text-slate-700 leading-snug select-none ${
+                          (isCompleted || obj.completed) ? "line-through text-slate-400 font-medium" : ""
+                        }`}
+                      >
+                        {obj.description[lang]}
+                      </label>
 
-                    {/* Quiz/Battle action button */}
-                    {obj.type === "answer_quiz" && !obj.completed && !isCompleted && isActive && battle && (
-                      <div className="pt-1.5">
-                        <Button
-                          size="sm"
-                          onClick={() => setBattleActive(true)}
-                          className="h-7 px-3 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white flex gap-1 items-center"
-                        >
-                          <Play className="h-3 w-3 fill-white" />
-                          <span>{t("battle.title")} ({battle.title[lang]})</span>
-                        </Button>
-                      </div>
-                    )}
+                      {/* GPS Check-in Action Button */}
+                      {isVisitLocation && !obj.completed && !isCompleted && isActive && (
+                        <div className="pt-1.5 flex flex-wrap gap-2 items-center">
+                          <Button
+                            size="sm"
+                            onClick={() => handleCheckGpsLocation(obj.id)}
+                            className="h-7 px-3 text-[9px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white flex gap-1 items-center rounded-full tracking-wider cursor-pointer"
+                          >
+                            <MapPin className="h-3 w-3" />
+                            <span>CEK LOKASI GPS</span>
+                          </Button>
+                        </div>
+                      )}
+
+                      {isVisitLocation && (isCompleted || obj.completed) && (
+                        <div className="pt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Berhasil Check-in
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Quiz/Battle action button */}
+                      {obj.type === "answer_quiz" && !obj.completed && !isCompleted && isActive && battle && (
+                        <div className="pt-1.5">
+                          <Button
+                            size="sm"
+                            onClick={() => setBattleActive(true)}
+                            className="h-7 px-3 text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white flex gap-1 items-center rounded-full cursor-pointer"
+                          >
+                            <Play className="h-3 w-3 fill-white" />
+                            <span>{t("battle.title")} ({battle.title[lang]})</span>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
+
+            {/* GPS Feedback & Simulation Tool (Only shown when active and has visit objectives) */}
+            {isActive && !isCompleted && quest.objectives.some(o => o.type === "visit_location") && (
+              <div className="pt-3 mt-2 border-t border-slate-100 space-y-2">
+                {distanceInfo && (
+                  <p className="text-[10px] font-bold text-emerald-700 bg-emerald-50/50 p-2 rounded-lg border border-emerald-100/50">
+                    ℹ️ {distanceInfo}
+                  </p>
+                )}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-100 border border-slate-200">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider block">🔧 Alat Pengujian (Testing Tool)</span>
+                    <span className="text-[10px] text-slate-700 font-bold block">Simulasi Posisi GPS di Destinasi</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={isSimulated ? "default" : "outline"}
+                    onClick={() => {
+                      audioManager.playClick();
+                      hapticsManager.triggerClick();
+                      setIsSimulated(!isSimulated);
+                      setDistanceInfo(null);
+                    }}
+                    className={`h-7 px-2.5 text-[9px] font-extrabold rounded-full tracking-wider cursor-pointer ${
+                      isSimulated ? "bg-amber-500 hover:bg-amber-600 text-white border-0" : "text-slate-600 border-slate-300 bg-white"
+                    }`}
+                  >
+                    <Navigation className={`h-3 w-3 mr-1 ${isSimulated ? "animate-pulse" : ""}`} />
+                    {isSimulated ? "SIMULASI AKTIF" : "AKTIFKAN SIMULASI"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

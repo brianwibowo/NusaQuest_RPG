@@ -6,6 +6,8 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Home, Map, Swords, Gift, User } from "lucide-react";
+import { audioManager } from "@/lib/audio";
+import { hapticsManager } from "@/lib/haptics";
 
 const NAV_ITEMS = [
   { path: "/", icon: Home, labelKey: "nav.home" },
@@ -18,6 +20,11 @@ const NAV_ITEMS = [
 export default function BottomNav() {
   const { t } = useTranslation();
 
+  const handleNavClick = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-lg items-center justify-around px-2 py-1">
@@ -26,6 +33,7 @@ export default function BottomNav() {
             key={path}
             to={path}
             end={path === "/"}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `flex flex-col items-center gap-0.5 px-3 py-2 text-xs transition-colors ${
                 isActive
