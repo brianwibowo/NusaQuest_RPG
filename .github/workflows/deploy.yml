@@ -30,11 +30,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Downcase Repo Name
+        run: |
+          echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ghcr.io/${{ env.REPO_LOWER }}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v5
@@ -42,7 +46,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ env.REPO_LOWER }}:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -65,14 +69,17 @@ jobs:
             mkdir -p ~/nusaquest-deploy
             cd ~/nusaquest-deploy
 
+            # Convert repo name to lowercase for Docker image reference
+            REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
             # 2. Login to GitHub Container Registry on VPS
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # 3. Create or Update docker-compose.yml file dynamically on VPS
-            cat << 'EOF' > docker-compose.yml
+            cat << EOF > docker-compose.yml
             services:
               nusaquest-rpg:
-                image: ghcr.io/${{ github.repository }}:latest
+                image: ghcr.io/${REPO_LOWER}:latest
                 container_name: nusaquest_rpg_web
                 ports:
                   - "8080:80"
