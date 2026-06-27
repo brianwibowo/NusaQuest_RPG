@@ -82,7 +82,7 @@ jobs:
                 image: ghcr.io/${REPO_LOWER}:latest
                 container_name: nusaquest_rpg_web
                 ports:
-                  - "8080:80"
+                  - "8090:80"
                 restart: always
             EOF
 
