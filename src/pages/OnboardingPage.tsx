@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import LanguageToggle from "@/components/common/LanguageToggle";
 import { Badge } from "@/components/ui/badge";
-import { Compass, Shield, Utensils, Leaf, Landmark, Users, Key, Swords, ChevronRight, User } from "lucide-react";
+import { Compass, Shield, Utensils, Leaf, Landmark, Users, Key, ChevronRight, User } from "lucide-react";
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -69,14 +69,20 @@ export default function OnboardingPage() {
         {/* ==========================================
             LEFT PANEL: Logo & Title (Brand Showcase)
            ========================================== */}
-        <div className="flex-1 flex flex-col items-center justify-center p-10 md:p-16 text-center bg-white border-b md:border-b-0 md:border-r border-slate-100 relative">
-          
+        <div className="flex-1 flex flex-col items-center justify-center p-10 md:p-16 text-center bg-white border-b md:border-b-0 md:border-r border-slate-100 relative overflow-hidden">
+          {/* Background Hero Image */}
+          <img 
+            src="/images/ui/onboarding_hero.png" 
+            alt="Adventure Hero" 
+            className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none" 
+          />
+
           {/* Glowing Aura behind Logo */}
           <div className="absolute w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl z-0 pointer-events-none" />
           
           {/* White Card Logo */}
-          <div className="w-24 h-24 bg-white rounded-[24px] border border-slate-100 flex items-center justify-center shadow-lg shadow-slate-100/50 relative z-10">
-            <Swords className="h-10 w-10 text-emerald-600 animate-pulse" />
+          <div className="w-24 h-24 bg-white rounded-[24px] border border-slate-100 flex items-center justify-center shadow-lg shadow-slate-100/50 relative z-10 overflow-hidden p-3">
+            <img src="/images/ui/logo.png" alt="NusaQuest Logo" className="w-full h-full object-contain" />
           </div>
 
           <h2 className="text-4xl font-black text-[#0B1528] tracking-widest mt-6 leading-none">
@@ -105,7 +111,6 @@ export default function OnboardingPage() {
         <div className="flex-1 flex items-center justify-center p-8 md:p-12 bg-[#F4F7FB]/50 md:bg-transparent">
           
           {step === 1 ? (
-            /* Card size upgraded to max-w-md and p-8 */
             <Card className="w-full max-w-md bg-white border border-slate-100 rounded-3xl p-8 shadow-xl shadow-slate-100/50 flex flex-col gap-6 text-center justify-center transition-all duration-300">
               <div className="space-y-1.5">
                 <h3 className="text-xl font-black text-[#0B1528] tracking-wide">Siap Bermain?</h3>
@@ -147,7 +152,6 @@ export default function OnboardingPage() {
               </div>
             </Card>
           ) : (
-            /* Card size upgraded to max-w-md and p-7 */
             <Card className="w-full max-w-md bg-white border border-slate-100 rounded-3xl p-7 shadow-xl shadow-slate-100/50 flex flex-col gap-5 text-center transition-all duration-300">
               <div className="space-y-1">
                 <h3 className="text-lg font-black text-[#0B1528] tracking-wide">Pilih Karakter</h3>
@@ -156,7 +160,6 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              {/* Grid height increased to 220px to show 4 items comfortably */}
               <div className="grid grid-cols-2 gap-2.5 max-h-[220px] overflow-y-auto pr-1.5 scrollbar-thin">
                 {CHARACTERS.map((char) => {
                   const isSelected = selectedCharId === char.id;
@@ -188,21 +191,28 @@ export default function OnboardingPage() {
 
               {/* RPG preview detail panel */}
               {selectedCharacter && (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-dashed border-emerald-200 space-y-2 text-left shadow-inner">
-                  <div className="space-y-0.5">
-                    <h4 className="text-xs font-bold text-slate-800">
-                      {selectedCharacter.name[lang]} · <span className="text-emerald-600 font-semibold text-[10px]">{selectedCharacter.role[lang]}</span>
-                    </h4>
-                    <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                      {selectedCharacter.description[lang]}
-                    </p>
-                  </div>
-                  <div className="pt-2.5 border-t border-slate-200/50">
-                    <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider block">Kekuatan Khusus</span>
-                    <p className="text-[9px] font-bold text-emerald-800 mt-1 flex items-center gap-1.5 bg-white px-2.5 py-1.5 rounded-lg border border-emerald-100/50">
-                      <span>✨</span>
-                      <span>{selectedCharacter.specialPower[lang]}</span>
-                    </p>
+                <div className="p-3 rounded-xl bg-slate-50 border border-dashed border-emerald-200 flex gap-3 text-left shadow-inner items-start">
+                  <img 
+                    src={selectedCharacter.avatarUrl} 
+                    alt={selectedCharacter.name[lang]} 
+                    className="w-16 h-16 object-contain rounded-lg bg-emerald-50 border border-emerald-100 flex-shrink-0" 
+                  />
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#0B1528]">
+                        {selectedCharacter.name[lang]} · <span className="text-emerald-600 font-semibold text-[9px]">{selectedCharacter.role[lang]}</span>
+                      </h4>
+                      <p className="text-[9px] text-slate-500 leading-normal font-semibold mt-0.5">
+                        {selectedCharacter.description[lang]}
+                      </p>
+                    </div>
+                    <div className="pt-1.5 border-t border-slate-200/50">
+                      <span className="text-[7px] font-extrabold text-slate-400 uppercase tracking-wider block">Kekuatan Khusus</span>
+                      <p className="text-[9px] font-bold text-emerald-800 mt-1 flex items-center gap-1.5 bg-white px-2 py-1 rounded-lg border border-emerald-100/50">
+                        <span>✨</span>
+                        <span>{selectedCharacter.specialPower[lang]}</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
