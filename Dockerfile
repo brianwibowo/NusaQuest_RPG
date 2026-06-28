@@ -16,7 +16,8 @@ RUN npm run build
 # ==========================================
 FROM nginx:stable-alpine
 
-# Copy custom nginx configuration if needed, or use default static serving
+# Copy custom nginx configuration to support React Router SPA routing
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 EXPOSE 80
