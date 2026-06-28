@@ -84,37 +84,74 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
+    --background: oklch(0.12 0.02 245); /* Deep midnight navy (#080E1B) */
+    --foreground: oklch(0.96 0.01 245); /* Soft premium white (#ECF0F6) */
+    --card: oklch(0.16 0.03 245); /* Obsidian panel background (#121B2C) */
+    --card-foreground: oklch(0.96 0.01 245);
+    --popover: oklch(0.16 0.03 245);
+    --popover-foreground: oklch(0.96 0.01 245);
+    --primary: oklch(0.75 0.14 150); /* Neon fantasy emerald (#10B981) */
+    --primary-foreground: oklch(0.12 0.02 245);
+    --secondary: oklch(0.22 0.04 245); /* Glowing dark slate */
+    --secondary-foreground: oklch(0.96 0.01 245);
+    --muted: oklch(0.18 0.03 245);
+    --muted-foreground: oklch(0.70 0.02 245); /* Slate gray text */
+    --accent: oklch(0.22 0.04 245);
+    --accent-foreground: oklch(0.96 0.01 245);
+    --destructive: oklch(0.55 0.18 25);
+    --border: oklch(0.24 0.05 245 / 70%); /* Glowing border line (#243552) */
+    --input: oklch(0.24 0.05 245 / 70%);
+    --ring: oklch(0.75 0.14 150 / 50%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --sidebar: oklch(0.14 0.03 245);
+    --sidebar-foreground: oklch(0.96 0.01 245);
+    --sidebar-primary: oklch(0.75 0.14 150);
+    --sidebar-primary-foreground: oklch(0.12 0.02 245);
+    --sidebar-accent: oklch(0.22 0.04 245);
+    --sidebar-accent-foreground: oklch(0.96 0.01 245);
+    --sidebar-border: oklch(0.24 0.05 245 / 70%);
+    --sidebar-ring: oklch(0.75 0.14 150 / 50%);
+
+    /* ─── Global Overrides for hardcoded utility classes in Dark RPG ─── */
+    .bg-white {
+        background-color: var(--card) !important;
+        color: var(--foreground) !important;
+    }
+    
+    .bg-white\/95, .bg-white\/90 {
+        background-color: oklch(0.14 0.03 245 / 85%) !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
+    }
+
+    .border-slate-100, .border-slate-200, .border-border {
+        border-color: var(--border) !important;
+    }
+
+    .bg-slate-50, .bg-slate-50\/50, .bg-slate-50\/30 {
+        background-color: oklch(0.13 0.025 245 / 50%) !important;
+    }
+
+    .text-slate-800, .text-slate-900 {
+        color: var(--foreground) !important;
+    }
+
+    .text-slate-600, .text-slate-700 {
+        color: oklch(0.75 0.02 245) !important;
+    }
+
+    .text-muted-foreground {
+        color: oklch(0.65 0.02 245) !important;
+    }
+
+    /* Glowing scroll card styling */
+    .shadow-sm, .shadow-md, .shadow-lg {
+        box-shadow: 0 4px 20px -2px rgba(8, 14, 27, 0.6), 0 0 1px 0 rgba(34, 197, 94, 0.1) !important;
+    }
 }
 
 @layer base {
