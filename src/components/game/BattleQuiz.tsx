@@ -26,6 +26,14 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
   const [battleOver, setBattleOver] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
 
+  // Lower BGM volume when quiz starts, restore when quiz unmounts
+  useEffect(() => {
+    audioManager.lowerBgm();
+    return () => {
+      audioManager.restoreBgm();
+    };
+  }, []);
+
   const question = battle.questions[currentIdx];
   const progress = Math.round((currentIdx / battle.questions.length) * 100);
 
@@ -97,6 +105,7 @@ export default function BattleQuiz({ battle, lang, onFinish, onCancel }: BattleQ
 
   const handleFinish = () => {
     const passed = score >= battle.passingScore;
+    audioManager.restoreBgm();
     onFinish(score, passed);
   };
 

@@ -3,6 +3,8 @@
 class AudioManager {
   private bgm: HTMLAudioElement | null = null;
   private isMuted: boolean = false;
+  private normalVolume: number = 0.15;
+  private duckVolume: number = 0.03;
 
   constructor() {
     // Load mute state from localStorage
@@ -61,6 +63,42 @@ class AudioManager {
       this.bgm.pause();
       this.bgm = null;
     }
+  }
+
+  /**
+   * Lower BGM volume during quiz/battle for focus
+   */
+  public lowerBgm() {
+    if (!this.bgm) return;
+    // Smooth fade down
+    const target = this.duckVolume;
+    const step = 0.01;
+    const interval = setInterval(() => {
+      if (this.bgm && this.bgm.volume > target + step) {
+        this.bgm.volume -= step;
+      } else {
+        if (this.bgm) this.bgm.volume = target;
+        clearInterval(interval);
+      }
+    }, 30);
+  }
+
+  /**
+   * Restore BGM volume after quiz/battle ends
+   */
+  public restoreBgm() {
+    if (!this.bgm) return;
+    // Smooth fade up
+    const target = this.normalVolume;
+    const step = 0.01;
+    const interval = setInterval(() => {
+      if (this.bgm && this.bgm.volume < target - step) {
+        this.bgm.volume += step;
+      } else {
+        if (this.bgm) this.bgm.volume = target;
+        clearInterval(interval);
+      }
+    }, 30);
   }
 
   /**
