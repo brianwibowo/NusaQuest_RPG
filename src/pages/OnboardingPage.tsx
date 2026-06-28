@@ -69,39 +69,44 @@ export default function OnboardingPage() {
         {/* ==========================================
             LEFT PANEL: Logo & Title (Brand Showcase)
            ========================================== */}
-        <div className="flex-1 flex flex-col items-center justify-center p-10 md:p-16 text-center bg-white border-b md:border-b-0 md:border-r border-slate-100 relative overflow-hidden">
-          {/* Background Hero Image */}
+        <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-12 text-center relative overflow-hidden bg-slate-950">
+          {/* Background Hero Image - Full 100% Opacity */}
           <img 
             src="/images/ui/onboarding_hero.png" 
             alt="Adventure Hero" 
-            className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none" 
+            className="absolute inset-0 w-full h-full object-cover opacity-100 pointer-events-none" 
           />
+          {/* Dark Overlay for visual depth and text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/30 to-slate-950/55 z-0" />
 
-          {/* Glowing Aura behind Logo */}
-          <div className="absolute w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl z-0 pointer-events-none" />
-          
-          {/* White Card Logo */}
-          <div className="w-24 h-24 bg-white rounded-[24px] border border-slate-100 flex items-center justify-center shadow-lg shadow-slate-100/50 relative z-10 overflow-hidden p-3">
-            <img src="/images/ui/logo.png" alt="NusaQuest Logo" className="w-full h-full object-contain" />
-          </div>
+          {/* Premium Glassmorphic Overlay Panel */}
+          <div className="relative z-10 flex flex-col items-center max-w-sm px-6 py-7 rounded-2xl bg-slate-950/40 backdrop-blur-md border border-white/10 text-white shadow-2xl">
+            
+            {/* Logo - Rendered directly with glowing green drop-shadow to fix px padding issue */}
+            <img 
+              src="/images/ui/logo.png" 
+              alt="NusaQuest Logo" 
+              className="w-28 h-28 object-contain drop-shadow-[0_4px_16px_rgba(16,185,129,0.5)] mb-3" 
+            />
 
-          <h2 className="text-4xl font-black text-[#0B1528] tracking-widest mt-6 leading-none">
-            NUSA QUEST
-          </h2>
-          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mt-3.5 max-w-[280px] leading-relaxed">
-            Simulasi Penjelajahan Digital &amp; Warisan Budaya Nusantara
-          </p>
+            <h2 className="text-3xl font-black text-white tracking-widest leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+              NUSA QUEST
+            </h2>
+            <p className="text-[10px] font-extrabold text-emerald-300 uppercase tracking-widest mt-3 max-w-[260px] leading-relaxed drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+              Simulasi Penjelajahan Digital &amp; Warisan Budaya Nusantara
+            </p>
 
-          {/* Badges with Green Dots */}
-          <div className="flex flex-wrap gap-2.5 justify-center mt-8">
-            <Badge variant="outline" className="bg-[#EAFDF5] border-emerald-100 text-emerald-800 text-[10px] font-extrabold py-1.5 px-3.5 rounded-full flex items-center gap-1.5 shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-              BILINGUAL AKTIF
-            </Badge>
-            <Badge variant="outline" className="bg-[#EBF3FE] border-blue-100 text-blue-800 text-[10px] font-extrabold py-1.5 px-3.5 rounded-full flex items-center gap-1.5 shadow-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-ping" />
-              REAL-TIME GPS
-            </Badge>
+            {/* Badges with Glowing Dots */}
+            <div className="flex flex-wrap gap-2 justify-center mt-5">
+              <Badge variant="outline" className="bg-emerald-950/60 border-emerald-500/30 text-emerald-300 text-[9px] font-extrabold py-1 px-3 rounded-full flex items-center gap-1.5 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                BILINGUAL AKTIF
+              </Badge>
+              <Badge variant="outline" className="bg-blue-950/60 border-blue-500/30 text-blue-300 text-[9px] font-extrabold py-1 px-3 rounded-full flex items-center gap-1.5 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-ping" />
+                REAL-TIME GPS
+              </Badge>
+            </div>
           </div>
         </div>
 
