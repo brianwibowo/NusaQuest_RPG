@@ -26,11 +26,13 @@ export function mapBattle(b: any) {
 
 export function mapQuest(q: any) {
   if (!q) return null;
+  const estVal = q.estimatedTimeId ? { id: q.estimatedTimeId, en: q.estimatedTimeEn } : null;
   return {
     ...q,
     title: { id: q.titleId, en: q.titleEn },
     description: { id: q.descId, en: q.descEn },
-    estimatedTime: q.estimatedTimeId ? { id: q.estimatedTimeId, en: q.estimatedTimeEn } : null,
+    estimatedTime: estVal,
+    estimatedDuration: estVal,
     location: mapLocation(q.location),
     objectives: q.objectives?.map((obj: any) => ({
       ...obj,
