@@ -20,6 +20,10 @@ locationRoutes.get("/", async (c) => {
       : {};
     const locations = await prisma.location.findMany({
       where: whereClause,
+      include: {
+        quests: true,
+        umkms: true,
+      },
       orderBy: { createdAt: "desc" },
     });
     return c.json(locations.map(mapLocation));

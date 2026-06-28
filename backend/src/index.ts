@@ -3,6 +3,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { join } from "path";
+import { existsSync } from "fs";
+
+// Load environment variables from .env file (Node 20.6.0+)
+const envPath = join(process.cwd(), ".env");
+if (existsSync(envPath) && typeof process.loadEnvFile === "function") {
+  process.loadEnvFile(envPath);
+}
 
 // Route imports
 import authRoutes from "./routes/auth";

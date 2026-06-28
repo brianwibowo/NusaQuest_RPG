@@ -4,7 +4,9 @@ export function mapLocation(loc: any) {
     ...loc,
     name: { id: loc.nameId, en: loc.nameEn },
     description: { id: loc.descId, en: loc.descEn },
-    address: loc.addressId ? { id: loc.addressId, en: loc.addressEn } : null
+    address: loc.addressId ? { id: loc.addressId, en: loc.addressEn } : null,
+    questIds: loc.quests?.map((q: any) => q.id) || [],
+    umkmIds: loc.umkms?.map((u: any) => u.id) || []
   };
 }
 
