@@ -18,8 +18,18 @@ export default function StoryCard({ story, lang }: StoryCardProps) {
     <Card className={`overflow-hidden border-slate-100 bg-white transition-all hover:shadow-md ${!story.unlocked ? "bg-slate-50/50 opacity-75" : ""}`}>
       <CardContent className="p-4 flex gap-3 items-center">
         {/* Thumbnail/Ikon */}
-        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 border border-slate-200">
-          <span className="text-2xl">{story.category === "sejarah" ? "📜" : story.category === "budaya" ? "🎭" : story.category === "kuliner" ? "🍲" : "🌳"}</span>
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl overflow-hidden bg-slate-100 border border-slate-200 relative">
+          {story.unlocked ? (
+            <img 
+              src={story.imageUrl} 
+              alt={story.title[lang]} 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <span className="text-2xl opacity-40">
+              {story.category === "sejarah" ? "📜" : story.category === "budaya" ? "🎭" : story.category === "kuliner" ? "🍲" : "🌳"}
+            </span>
+          )}
         </div>
 
         {/* Info detail */}

@@ -58,11 +58,23 @@ export default function StoryDetailPage() {
 
       {/* Parchment Scroll Card Container */}
       <Card className="overflow-hidden border-2 border-[#D4B585] bg-gradient-to-b from-[#FAF4E6] to-[#F1E4C3] shadow-xl rounded-2xl relative">
-        {/* Scroll Header Ornament */}
+        {/* Scroll Header Ornament with Story Image */}
         <div className="h-1 bg-[#D4B585] w-full" />
-        <div className="h-32 bg-[#E9D9B2]/60 relative flex flex-col items-center justify-center border-b border-[#D4B585]">
-          <span className="text-5xl drop-shadow-md">📜</span>
-          <span className="text-[9px] font-black text-[#8C6D42] tracking-[0.2em] uppercase mt-2">Naskah Nusantara</span>
+        <div className="h-48 w-full relative overflow-hidden border-b border-[#D4B585]">
+          <img 
+            src={story.imageUrl} 
+            alt={story.title[lang]} 
+            className="w-full h-full object-cover"
+          />
+          {/* Blend overlay */}
+          <div className="absolute inset-0 bg-[#8C6D42]/10 mix-blend-color-burn" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+          
+          <div className="absolute bottom-3 left-6 z-10">
+            <span className="text-[9px] font-black text-amber-200 tracking-[0.25em] uppercase drop-shadow-sm">
+              Naskah Nusantara
+            </span>
+          </div>
         </div>
 
         <CardContent className="p-6 space-y-5 relative">
