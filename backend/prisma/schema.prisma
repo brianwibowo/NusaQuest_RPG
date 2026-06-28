@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════
+// AUTH & USERS
+// ══════════════════════════════════════
+
+enum UserRole {
+  super_admin
+  admin
+  user
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  avatarUrl     String?
+  role          UserRole  @default(user)
+  googleId      String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile       Profile?
+}
+
+model Profile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  characterId       String
+  level             Int      @default(1)
+  currentXp         Int      @default(0)
+  totalPoints       Int      @default(0)
+  gold              Int      @default(100)
+  language          String   @default("id")
+
+  completedQuestIds String[] @default([])
+  activeQuestIds    String[] @default([])
+  obtainedBadgeIds  String[] @default([])
+  obtainedRewardIds String[] @default([])
+  unlockedStoryIds  String[] @default([])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ══════════════════════════════════════
+// TOURISM CONTENT (Admin-managed)
+// ══════════════════════════════════════
+
+enum LocationCategory {
+  wisata_budaya
+  wisata_kuliner
+  wisata_sejarah
+  ekowisata
+  umkm
+  hidden_spot
+}
+
+model Location {
+  id          String           @id @default(cuid())
+  nameId      String
+  nameEn      String
+  descId      String           @db.Text
+  descEn      String           @db.Text
+  category    LocationCategory
+  latitude    Float
+  longitude   Float
+  imageUrl    String?
+  addressId   String?
+  addressEn   String?
+
+  quests      Quest[]
+  stories     Story[]
+  umkms       Umkm[]
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum QuestType {
+  main
+  side
+  cultural
+  historical
+  culinary
+  umkm_quest
+  eco
+  photo
+  ar_treasure
+  social
+  educational
+  daily
+  seasonal
+}
+
+enum QuestDifficulty {
+  easy
+  medium
+  hard
+}
+
+model Quest {
+  id                String          @id @default(cuid())
+  titleId           String
+  titleEn           String
+  descId            String          @db.Text
+  descEn            String          @db.Text
+  type              QuestType
+  difficulty        QuestDifficulty @default(easy)
+  requiredLevel     Int             @default(1)
+  availableLevels   Int[]           @default([1])
+  estimatedTimeId   String?
+  estimatedTimeEn   String?
+  imageUrl          String?
+
+  locationId        String
+  location          Location        @relation(fields: [locationId], references: [id])
+
+  objectives        QuestObjective[]
+  reward            QuestReward?
+  battle            Battle?
+
+  relatedUmkmId     String?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+enum ObjectiveType {
+  visit_location
+  scan_qr
+  answer_quiz
+  take_photo
+  buy_product
+  write_review
+  eco_action
+  social_interact
+}
+
+model QuestObjective {
+  id          String        @id @default(cuid())
+  questId     String
+  quest       Quest         @relation(fields: [questId], references: [id], onDelete: Cascade)
+  descId      String
+  descEn      String
+  type        ObjectiveType
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+}
+
+model QuestReward {
+  id              String  @id @default(cuid())
+  questId         String  @unique
+  quest           Quest   @relation(fields: [questId], references: [id], onDelete: Cascade)
+  xp              Int     @default(0)
+  points          Int     @default(0)
+  badgeId         String?
+  voucherId       String?
+  collectibleId   String?
+  storyUnlockId   String?
+}
+
+enum StoryCategory {
+  budaya
+  sejarah
+  legenda
+  kuliner
+  lingkungan
+}
+
+model Story {
+  id                String        @id @default(cuid())
+  titleId           String
+  titleEn           String
+  contentId         String        @db.Text
+  contentEn         String        @db.Text
+  category          StoryCategory
+  imageUrl          String?
+  locationId        String
+  location          Location      @relation(fields: [locationId], references: [id])
+  unlockedByQuestId String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+enum BattleType {
+  knowledge
+  eco
+  culinary
+  heritage
+  umkm_battle
+  puzzle
+  social
+}
+
+model Battle {
+  id            String           @id @default(cuid())
+  titleId       String
+  titleEn       String
+  type          BattleType
+  descId        String           @db.Text
+  descEn        String           @db.Text
+  timeLimit     Int              @default(60)
+  rewardXp      Int              @default(0)
+  rewardPoints  Int              @default(0)
+  passingScore  Int              @default(60)
+
+  questId       String?          @unique
+  quest         Quest?           @relation(fields: [questId], references: [id])
+
+  questions     BattleQuestion[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model BattleQuestion {
+  id              String   @id @default(cuid())
+  battleId        String
+  battle          Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  questionId      String   @db.Text
+  questionEn      String   @db.Text
+  options         Json
+  correctIndex    Int
+  explanationId   String   @db.Text
+  explanationEn   String   @db.Text
+  sortOrder       Int      @default(0)
+}
+
+enum UmkmCategory {
+  kuliner
+  suvenir
+  kerajinan
+  fashion
+  jasa
+}
+
+model Umkm {
+  id               String       @id @default(cuid())
+  name             String
+  descId           String       @db.Text
+  descEn           String       @db.Text
+  category         UmkmCategory
+  products         String[]     @default([])
+  imageUrl         String?
+  rating           Float        @default(0)
+  voucherAvailable Boolean      @default(false)
+
+  locationId       String
+  location         Location     @relation(fields: [locationId], references: [id])
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model Song {
+  id        String   @id @default(cuid())
+  name      String
+  fileUrl   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
