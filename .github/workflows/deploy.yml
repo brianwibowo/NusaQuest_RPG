@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  # 1. Build and push image to GitHub Container Registry (GHCR)
+  # 1. Build and push frontend and backend images to GitHub Container Registry (GHCR)
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
@@ -34,20 +34,23 @@ jobs:
         run: |
           echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> ${GITHUB_ENV}
 
-      - name: Extract metadata (tags, labels)
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ env.REPO_LOWER }}
-
-      - name: Build and Push Docker Image
+      - name: Build and Push Backend Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}:latest
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Push Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -65,31 +68,122 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           script: |
-            # 1. Make sure deployment directory exists
+            # Make sure deployment directory exists
             mkdir -p ~/nusaquest-deploy
             cd ~/nusaquest-deploy
 
             # Convert repo name to lowercase for Docker image reference
             REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
 
-            # 2. Login to GitHub Container Registry on VPS
+            # Login to GitHub Container Registry on VPS
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # 3. Create or Update docker-compose.yml file dynamically on VPS
-            cat << EOF > docker-compose.yml
-            services:
-              nusaquest-rpg:
-                image: ghcr.io/${REPO_LOWER}:latest
-                container_name: nusaquest_rpg_web
-                ports:
-                  - "8090:80"
-                restart: always
+            # Write nginx.conf dynamically on VPS
+            cat << 'EOF' > nginx.conf
+            upstream frontend_upstream {
+                server frontend:80;
+            }
+            upstream backend_upstream {
+                server backend:3001;
+            }
+
+            server {
+                listen 80;
+                server_name localhost;
+
+                client_max_body_size 10M;
+
+                location /api/ {
+                    proxy_pass http://backend_upstream;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+
+                location / {
+                    proxy_pass http://frontend_upstream;
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                }
+
+                error_page 500 502 503 504 /50x.html;
+                location = /50x.html {
+                    root /usr/share/nginx/html;
+                }
+            }
             EOF
 
-            # 4. Pull the latest image and restart containers
+            # Write .env dynamically if it doesn't exist
+            if [ ! -f .env ]; then
+              echo "DB_PASSWORD=nusaquest_secret" >> .env
+              echo "JWT_SECRET=super_secret_jwt_key_that_is_at_least_32_characters_long" >> .env
+              echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+              echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
+              echo "FRONTEND_URL=https://sirupi.space" >> .env
+            fi
+
+            # Create or Update docker-compose.yml file dynamically on VPS
+            cat << EOF > docker-compose.yml
+            services:
+              postgres:
+                image: postgres:16-alpine
+                container_name: nusaquest_db
+                environment:
+                  POSTGRES_USER: nusaquest
+                  POSTGRES_PASSWORD: \${DB_PASSWORD:-nusaquest_secret}
+                  POSTGRES_DB: nusaquest
+                volumes:
+                  - pgdata:/var/lib/postgresql/data
+                restart: always
+
+              backend:
+                image: ghcr.io/${REPO_LOWER}/backend:latest
+                container_name: nusaquest_api
+                environment:
+                  DATABASE_URL: postgresql://nusaquest:\${DB_PASSWORD:-nusaquest_secret}@postgres:5432/nusaquest
+                  JWT_SECRET: \${JWT_SECRET:-super_secret_jwt_key_that_is_at_least_32_characters_long}
+                  GOOGLE_CLIENT_ID: \${GOOGLE_CLIENT_ID}
+                  GOOGLE_CLIENT_SECRET: \${GOOGLE_CLIENT_SECRET}
+                  FRONTEND_URL: https://sirupi.space
+                  PORT: 3001
+                volumes:
+                  - uploads_data:/app/uploads
+                depends_on:
+                  postgres:
+                    condition: service_started
+                restart: always
+
+              frontend:
+                image: ghcr.io/${REPO_LOWER}/frontend:latest
+                container_name: nusaquest_web
+                restart: always
+
+              nginx:
+                image: nginx:stable-alpine
+                container_name: nusaquest_proxy
+                ports:
+                  - "8090:80"
+                volumes:
+                  - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+                depends_on:
+                  - frontend
+                  - backend
+                restart: always
+
+            volumes:
+              pgdata:
+              uploads_data:
+            EOF
+
+            # Pull the latest images and restart containers
             docker compose pull
             docker compose down
             docker compose up -d
 
-            # 5. Clean up old unused images
+            # Run database migrations and seeding dynamically on the backend container
+            docker exec nusaquest_api npx prisma migrate deploy
+            docker exec nusaquest_api npx tsx prisma/seed.ts || true
+
+            # Clean up old unused images
             docker image prune -f
