@@ -26,6 +26,23 @@ export default function OnboardingPage() {
   const [devEmail, setDevEmail] = useState("");
   const [devName, setDevName] = useState("");
 
+  const [googleLoaded, setGoogleLoaded] = useState(false);
+
+  // Poll for window.google to handle async script loading
+  useEffect(() => {
+    if ((window as any).google) {
+      setGoogleLoaded(true);
+      return;
+    }
+    const interval = setInterval(() => {
+      if ((window as any).google) {
+        setGoogleLoaded(true);
+        clearInterval(interval);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
   const selectedCharacter = CHARACTERS.find((c) => c.id === selectedCharId);
   const lang = player.language || "id";
 
@@ -39,7 +56,7 @@ export default function OnboardingPage() {
   // Google GSI button initialization
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "not_set";
-    if (clientId !== "not_set" && (window as any).google && !isAuthenticated) {
+    if (clientId !== "not_set" && googleLoaded && !isAuthenticated) {
       try {
         (window as any).google.accounts.id.initialize({
           client_id: clientId,
@@ -61,7 +78,7 @@ export default function OnboardingPage() {
         console.error("GSI initialization error:", err);
       }
     }
-  }, [isAuthenticated, showDevLogin]);
+  }, [isAuthenticated, showDevLogin, googleLoaded]);
 
   const handleNextStep = () => {
     if (name.trim()) setStep(2);
@@ -268,11 +285,11 @@ export default function OnboardingPage() {
             <div className="bg-white border border-[#E5E0D5] rounded-3xl max-w-md w-full p-6 text-left space-y-4 shadow-2xl relative">
               <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                 <span>📖</span>
-                <span>Panduan Petualang NusaQuest</span>
+                <span>Panduan Petualang SinopiQuest</span>
               </h3>
               
               <div className="text-xs text-slate-600 space-y-3 font-semibold leading-relaxed">
-                <p>Selamat datang di NusaQuest RPG! Berikut adalah panduan singkat petualanganmu:</p>
+                <p>Selamat datang di SinopiQuest RPG! Berikut adalah panduan singkat petualanganmu:</p>
                 <ol className="list-decimal pl-4 space-y-2">
                   <li>
                     <strong className="text-emerald-700">Jelajahi Peta Wisata:</strong> Kunjungi berbagai titik destinasi wisata di Jakarta (dan kota-kota lainnya) secara real-time.
@@ -319,8 +336,8 @@ export default function OnboardingPage() {
         <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-transparent to-slate-950/20 z-0" />
 
         <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#E5E0D5] shadow-sm">
-          <img src="/images/ui/logo.png" alt="Logo" className="h-4.5 w-4.5 object-contain" />
-          <span className="text-[9px] font-black text-slate-800 tracking-widest">NUSAQUEST</span>
+          <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-4.5 w-4.5 object-contain" />
+          <span className="text-[9px] font-black text-slate-800 tracking-widest">SINOPIQUEST</span>
         </div>
       </div>
 
@@ -337,13 +354,13 @@ export default function OnboardingPage() {
           {/* Top Header of Sidebar */}
           <div className="flex flex-col items-center text-center space-y-3 pt-4 md:pt-8 flex-shrink-0">
             <img 
-              src="/images/ui/logo.png" 
-              alt="NusaQuest Logo" 
+              src="/images/ui/logo.jpeg" 
+              alt="SinopiQuest Logo" 
               className="w-28 h-28 object-contain drop-shadow-[0_4px_16px_rgba(16,185,129,0.25)] transition-transform hover:scale-105 duration-300" 
             />
             <div className="space-y-1">
               <h2 className="text-2xl font-black text-slate-800 tracking-widest leading-none">
-                NUSA QUEST
+                SINOPI QUEST
               </h2>
               <p className="text-[9.5px] font-extrabold text-emerald-600 uppercase tracking-widest">
                 Simulasi Penjelajahan Digital &amp; Warisan Nusantara

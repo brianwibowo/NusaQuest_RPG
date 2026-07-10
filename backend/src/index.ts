@@ -60,6 +60,6 @@ app.route("/api/uploads", uploadRoutes);
 
 const port = Number(process.env.PORT) || 3001;
 serve({ fetch: app.fetch, port }, () => {
-  console.log(`🚀 NusaQuest API running on port ${port}`);
+  console.log(`🚀 SinopiQuest API running on port ${port}`);
 });
 export default app;

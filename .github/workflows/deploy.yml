@@ -71,8 +71,8 @@ jobs:
           port: 22
           script: |
             # Make sure deployment directory exists
-            mkdir -p ~/nusaquest-deploy
-            cd ~/nusaquest-deploy
+            mkdir -p ~/sinopiquest-deploy
+            cd ~/sinopiquest-deploy
 
             # Convert repo name to lowercase for Docker image reference
             REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
@@ -118,7 +118,7 @@ jobs:
 
             # Write .env dynamically if it doesn't exist
             if [ ! -f .env ]; then
-              echo "DB_PASSWORD=nusaquest_secret" >> .env
+              echo "DB_PASSWORD=sinopiquest_secret" >> .env
               echo "JWT_SECRET=super_secret_jwt_key_that_is_at_least_32_characters_long" >> .env
               echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
               echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> .env
@@ -130,20 +130,20 @@ jobs:
             services:
               postgres:
                 image: postgres:16-alpine
-                container_name: nusaquest_db
+                container_name: sinopiquest_db
                 environment:
-                  POSTGRES_USER: nusaquest
-                  POSTGRES_PASSWORD: \${DB_PASSWORD:-nusaquest_secret}
-                  POSTGRES_DB: nusaquest
+                  POSTGRES_USER: sinopiquest
+                  POSTGRES_PASSWORD: \${DB_PASSWORD:-sinopiquest_secret}
+                  POSTGRES_DB: sinopiquest
                 volumes:
                   - pgdata:/var/lib/postgresql/data
                 restart: always
 
               backend:
                 image: ghcr.io/${REPO_LOWER}/backend:latest
-                container_name: nusaquest_api
+                container_name: sinopiquest_api
                 environment:
-                  DATABASE_URL: postgresql://nusaquest:\${DB_PASSWORD:-nusaquest_secret}@postgres:5432/nusaquest
+                  DATABASE_URL: postgresql://sinopiquest:\${DB_PASSWORD:-sinopiquest_secret}@postgres:5432/sinopiquest
                   JWT_SECRET: \${JWT_SECRET:-super_secret_jwt_key_that_is_at_least_32_characters_long}
                   GOOGLE_CLIENT_ID: \${GOOGLE_CLIENT_ID}
                   GOOGLE_CLIENT_SECRET: \${GOOGLE_CLIENT_SECRET}
@@ -158,12 +158,12 @@ jobs:
 
               frontend:
                 image: ghcr.io/${REPO_LOWER}/frontend:latest
-                container_name: nusaquest_web
+                container_name: sinopiquest_web
                 restart: always
 
               nginx:
                 image: nginx:stable-alpine
-                container_name: nusaquest_proxy
+                container_name: sinopiquest_proxy
                 ports:
                   - "8090:80"
                 volumes:
@@ -184,8 +184,8 @@ jobs:
             docker compose up -d
 
             # Run database migrations and seeding dynamically on the backend container
-            docker exec nusaquest_api npx prisma migrate deploy
-            docker exec nusaquest_api npx tsx prisma/seed.ts || true
+            docker exec sinopiquest_api npx prisma migrate deploy
+            docker exec sinopiquest_api npx tsx prisma/seed.ts || true
 
             # Clean up old unused images
             docker image prune -f

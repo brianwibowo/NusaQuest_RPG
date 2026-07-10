@@ -121,7 +121,7 @@ export default function AdminStories() {
     formData.append("file", file);
     formData.append("entity", "stories");
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch("/api/uploads", {
@@ -143,7 +143,7 @@ export default function AdminStories() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       id: storyId || undefined,
       titleId,
@@ -180,7 +180,7 @@ export default function AdminStories() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus cerita ini?")) return;
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch(`/api/stories/${id}`, {

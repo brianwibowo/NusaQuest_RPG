@@ -16,7 +16,7 @@ import { calculateLevel } from "@/lib/xp";
 import { useAuth } from "@/context/AuthContext";
 
 // ─── Default State ───────────────────────────────────────────────
-const STORAGE_KEY = "nusaquest_player";
+const STORAGE_KEY = "sinopiquest_player";
 
 const DEFAULT_STATE: PlayerState = {
   name: "",
@@ -163,7 +163,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
 
   const syncToDb = (stateToSend = player) => {
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     if (!token) return;
 
     fetch("/api/progress", {
@@ -192,7 +192,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     if (!token) return;
 
     fetch("/api/progress", {

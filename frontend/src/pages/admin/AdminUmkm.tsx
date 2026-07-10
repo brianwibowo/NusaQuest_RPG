@@ -114,7 +114,7 @@ export default function AdminUmkm() {
     formData.append("file", file);
     formData.append("entity", "umkm");
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch("/api/uploads", {
@@ -136,7 +136,7 @@ export default function AdminUmkm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       id: umkmId || undefined,
       name,
@@ -174,7 +174,7 @@ export default function AdminUmkm() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus mitra UMKM ini?")) return;
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch(`/api/umkm/${id}`, {

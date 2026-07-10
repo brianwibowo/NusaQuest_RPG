@@ -63,7 +63,7 @@ export default function Header() {
               <SheetContent side="left" className="w-64 p-4 border-r-slate-100 bg-white flex flex-col gap-4">
                 <SheetHeader className="pb-2 border-b border-slate-100">
                   <SheetTitle className="flex items-center gap-1.5 text-left text-base font-bold text-emerald-700">
-                    <img src="/images/ui/logo.png" alt="Logo" className="h-5 w-5 object-contain" />
+                    <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-5 w-5 object-contain" />
                     <span>{t("app.name")}</span>
                   </SheetTitle>
                 </SheetHeader>
@@ -92,7 +92,7 @@ export default function Header() {
           )}
 
           <Link to="/" className="flex items-center gap-1.5 text-base font-bold text-emerald-700 tracking-tight select-none">
-            <img src="/images/ui/logo.png" alt="Logo" className="h-5 w-5 object-contain" />
+            <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-5 w-5 object-contain" />
             <span>{t("app.name")}</span>
           </Link>
         </div>

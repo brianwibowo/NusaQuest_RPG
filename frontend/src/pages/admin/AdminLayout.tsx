@@ -35,9 +35,9 @@ export default function AdminLayout() {
         <div className="p-6 space-y-6">
           {/* Logo Brand */}
           <div className="flex items-center gap-3">
-            <img src="/images/ui/logo.png" alt="Logo" className="h-8 w-8 object-contain animate-pulse" />
+            <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-8 w-8 object-contain" />
             <div>
-              <h1 className="text-sm font-black tracking-widest text-white leading-none">NUSAQUEST</h1>
+              <h1 className="text-sm font-black tracking-widest text-white leading-none">SINOPIQUEST</h1>
               <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Admin Control</span>
             </div>
           </div>

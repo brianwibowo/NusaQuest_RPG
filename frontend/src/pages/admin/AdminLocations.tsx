@@ -105,7 +105,7 @@ export default function AdminLocations() {
     formData.append("image", file);
     formData.append("entity", "locations");
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch("/api/uploads", {
@@ -129,7 +129,7 @@ export default function AdminLocations() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       nameId,
       nameEn,
@@ -167,7 +167,7 @@ export default function AdminLocations() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus lokasi ini?")) return;
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch(`/api/locations/${id}`, {

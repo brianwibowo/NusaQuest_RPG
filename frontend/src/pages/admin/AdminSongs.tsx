@@ -61,7 +61,7 @@ export default function AdminSongs() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       name,
       fileUrl,
@@ -95,7 +95,7 @@ export default function AdminSongs() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus lagu ini?")) return;
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch(`/api/songs/${id}`, {

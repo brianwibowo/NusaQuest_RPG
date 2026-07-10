@@ -1,18 +1,18 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: nusaquest_db
+    container_name: sinopiquest_db
     environment:
-      POSTGRES_USER: nusaquest
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-nusaquest_secret}
-      POSTGRES_DB: nusaquest
+      POSTGRES_USER: sinopiquest
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sinopiquest_secret}
+      POSTGRES_DB: sinopiquest
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nusaquest"]
+      test: ["CMD-SHELL", "pg_isready -U sinopiquest"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,9 +21,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: nusaquest_api
+    container_name: sinopiquest_api
     environment:
-      DATABASE_URL: postgresql://nusaquest:${DB_PASSWORD:-nusaquest_secret}@postgres:5432/nusaquest
+      DATABASE_URL: postgresql://sinopiquest:${DB_PASSWORD:-sinopiquest_secret}@postgres:5432/sinopiquest
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-not_set}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-not_set}
@@ -42,12 +42,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: nusaquest_web
+    container_name: sinopiquest_web
     restart: always
 
   nginx:
     image: nginx:stable-alpine
-    container_name: nusaquest_proxy
+    container_name: sinopiquest_proxy
     ports:
       - "8080:80"
     volumes:

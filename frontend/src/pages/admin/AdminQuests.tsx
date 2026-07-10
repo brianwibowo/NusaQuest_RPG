@@ -243,7 +243,7 @@ export default function AdminQuests() {
     formData.append("image", file);
     formData.append("entity", "quests");
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch("/api/uploads", {
@@ -295,7 +295,7 @@ export default function AdminQuests() {
       return;
     }
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       id: questId || undefined,
       titleId,
@@ -350,7 +350,7 @@ export default function AdminQuests() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Apakah Anda yakin ingin menghapus misi ini?")) return;
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
 
     try {
       const res = await fetch(`/api/quests/${id}`, {

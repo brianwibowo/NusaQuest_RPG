@@ -26,7 +26,7 @@ export default function AdminUsers() {
 
   const fetchUsers = () => {
     setLoading(true);
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     fetch("/api/users", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -48,7 +48,7 @@ export default function AdminUsers() {
     
     if (!confirm(confirmMsg)) return;
 
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     try {
       const res = await fetch(`/api/users/${id}/role`, {
         method: "PATCH",

@@ -14,7 +14,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const endpoints = ["/api/locations", "/api/quests", "/api/stories", "/api/umkm", "/api/users", "/api/songs"];
-    const token = localStorage.getItem("nusaquest_token");
+    const token = localStorage.getItem("sinopiquest_token");
     const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
     Promise.all(
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
     <div className="space-y-6 text-left animate-in fade-in duration-300">
       <div>
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Dashboard Utama</h2>
-        <p className="text-xs font-semibold text-slate-500 mt-1">Ringkasan data simulasi petualangan NusaQuest RPG.</p>
+        <p className="text-xs font-semibold text-slate-500 mt-1">Ringkasan data simulasi petualangan SinopiQuest RPG.</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
