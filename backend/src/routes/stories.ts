@@ -43,6 +43,15 @@ storyRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { id, titleId, titleEn, contentId, contentEn, category, imageUrl, locationId, unlockedByQuestId } = body;
 
+    if (!titleId || !titleEn || !contentId || !contentEn || !category) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, contentId, contentEn, category" }, 400);
+    }
+
+    if (id) {
+      const existing = await prisma.story.findUnique({ where: { id } });
+      if (existing) return c.json({ error: "Cerita dengan ID tersebut sudah ada" }, 409);
+    }
+
     const newStory = await prisma.story.create({
       data: {
         id: id || undefined,
@@ -58,6 +67,7 @@ storyRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(newStory, 201);
   } catch (err: any) {
+    if (err.code === "P2002") return c.json({ error: "Cerita dengan ID tersebut sudah ada" }, 409);
     return c.json({ error: "Failed to create story: " + err.message }, 500);
   }
 });
@@ -67,6 +77,10 @@ storyRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const { titleId, titleEn, contentId, contentEn, category, imageUrl, locationId, unlockedByQuestId } = body;
+
+    if (!titleId || !titleEn || !contentId || !contentEn || !category) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, contentId, contentEn, category" }, 400);
+    }
 
     const updatedStory = await prisma.story.update({
       where: { id },
@@ -83,6 +97,7 @@ storyRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(updatedStory);
   } catch (err: any) {
+    if (err.code === "P2025") return c.json({ error: "Cerita tidak ditemukan" }, 404);
     return c.json({ error: "Failed to update story: " + err.message }, 500);
   }
 });

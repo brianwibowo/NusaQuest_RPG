@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { usePlayer } from "@/context/PlayerContext";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -12,8 +13,9 @@ import { Compass, Shield, Utensils, Leaf, Landmark, Users, Key, ChevronRight, Us
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { player, dispatch } = usePlayer();
-  const { user, isAuthenticated, isAdmin, signInWithGoogleToken, signInWithMock, signOut } = useAuth();
+  const { user, isAuthenticated, isAdmin, signInWithGoogleToken, signOut } = useAuth();
   const toast = useToast();
 
   const [name, setName] = useState("");
@@ -21,11 +23,6 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1); // 1: Enter Name, 2: Choose Character
   const [showGuide, setShowGuide] = useState(false);
   
-  // States for development mock sign-in form visibility
-  const [showDevLogin, setShowDevLogin] = useState(false);
-  const [devEmail, setDevEmail] = useState("");
-  const [devName, setDevName] = useState("");
-
   const [googleLoaded, setGoogleLoaded] = useState(false);
 
   // Poll for window.google to handle async script loading
@@ -46,10 +43,11 @@ export default function OnboardingPage() {
   const selectedCharacter = CHARACTERS.find((c) => c.id === selectedCharId);
   const lang = player.language || "id";
 
-  // Pre-fill name from auth profile if authenticated
+  // Pre-fill name from auth profile if authenticated and automatically proceed to step 2
   useEffect(() => {
     if (user) {
       setName(user.name);
+      setStep(2);
     }
   }, [user]);
 
@@ -78,7 +76,7 @@ export default function OnboardingPage() {
         console.error("GSI initialization error:", err);
       }
     }
-  }, [isAuthenticated, showDevLogin, googleLoaded]);
+  }, [isAuthenticated, googleLoaded]);
 
   const handleNextStep = () => {
     if (name.trim()) setStep(2);
@@ -94,19 +92,6 @@ export default function OnboardingPage() {
       dispatch({ type: "OBTAIN_BADGE", badgeId: "badge_starter" });
       toast.success(lang === "id" ? "Petualangan dimulai! Selamat jalan!" : "Adventure started! Safe travels!");
       navigate("/");
-    }
-  };
-
-  const handleMockLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (devEmail.trim() && devName.trim()) {
-      try {
-        await signInWithMock(devEmail.trim(), devName.trim());
-        setShowDevLogin(false);
-        toast.success(lang === "id" ? "Developer Mock Login berhasil!" : "Developer Mock Login successful!");
-      } catch (err: any) {
-        toast.error("Mock login failed: " + err.message);
-      }
     }
   };
 
@@ -152,7 +137,7 @@ export default function OnboardingPage() {
             </div>
           ) : (
             <div className="text-slate-400 text-xs font-semibold z-10">
-              Pilih karakter di sebelah kanan untuk melihat detail
+              {t("onboarding.character_spotlight")}
             </div>
           )}
         </div>
@@ -166,10 +151,10 @@ export default function OnboardingPage() {
             {/* Header */}
             <div className="space-y-1.5 text-left pt-2">
               <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-widest uppercase">
-                Pilih Karakter
+                {t("onboarding.choose_character")}
               </h2>
               <p className="text-xs font-semibold text-slate-500">
-                Setiap karakter memiliki kekuatan unik dan bonus afinitas misi.
+                {t("onboarding.choose_character_desc")}
               </p>
             </div>
 
@@ -222,7 +207,7 @@ export default function OnboardingPage() {
                   
                   <div className="pt-2.5 border-t border-[#E5E0D5] space-y-1">
                     <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">
-                      Kekuatan Khusus
+                      {t("onboarding.special_power")}
                     </span>
                     <div className="text-xs font-extrabold text-emerald-800 flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 w-fit">
                       <span>✨</span>
@@ -241,14 +226,14 @@ export default function OnboardingPage() {
                   onClick={() => setStep(1)}
                   className="flex-1 h-11 text-xs font-bold text-slate-700 bg-white border-[#E5E0D5] rounded-full hover:bg-slate-50 cursor-pointer"
                 >
-                  Kembali
+                  {t("common.back")}
                 </Button>
                 <Button
                   onClick={handleCompleteOnboarding}
                   disabled={!selectedCharId}
                   className="flex-1 h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md rounded-full hover:scale-[1.01] active:scale-95 transition-all uppercase tracking-wider cursor-pointer"
                 >
-                  Mulai Bermain
+                  {t("onboarding.start_adventure")}
                 </Button>
               </div>
               <Button
@@ -256,7 +241,7 @@ export default function OnboardingPage() {
                 onClick={() => setShowGuide(true)}
                 className="w-full h-9 text-[10px] font-extrabold text-emerald-600 hover:text-emerald-700 tracking-wider uppercase cursor-pointer"
               >
-                📖 Panduan Petualang
+                📖 {t("onboarding.read_guide")}
               </Button>
             </div>
 
@@ -285,27 +270,27 @@ export default function OnboardingPage() {
             <div className="bg-white border border-[#E5E0D5] rounded-3xl max-w-md w-full p-6 text-left space-y-4 shadow-2xl relative">
               <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                 <span>📖</span>
-                <span>Panduan Petualang SinopiQuest</span>
+                <span>{t("onboarding.guide_title")}</span>
               </h3>
               
               <div className="text-xs text-slate-600 space-y-3 font-semibold leading-relaxed">
-                <p>Selamat datang di SinopiQuest RPG! Berikut adalah panduan singkat petualanganmu:</p>
+                <p>{t("onboarding.guide_welcome")}</p>
                 <ol className="list-decimal pl-4 space-y-2">
                   <li>
-                    <strong className="text-emerald-700">Jelajahi Peta Wisata:</strong> Kunjungi berbagai titik destinasi wisata di Jakarta (dan kota-kota lainnya) secara real-time.
+                    <strong className="text-emerald-700">{t("onboarding.guide_step1_title")}:</strong> {t("onboarding.guide_step1_desc")}
                   </li>
                   <li>
-                    <strong className="text-emerald-700">Mulai Misi (Quest):</strong> Pilih misi yang tersedia untuk mendapatkan XP, Poin, serta membuka kisah-kisah warisan budaya lokal yang unik.
+                    <strong className="text-emerald-700">{t("onboarding.guide_step2_title")}:</strong> {t("onboarding.guide_step2_desc")}
                   </li>
                   <li>
-                    <strong className="text-emerald-700">Knowledge Battle:</strong> Hadapi tantangan kuis interaktif berbatas waktu untuk membuktikan pengetahuan wisatamu.
+                    <strong className="text-emerald-700">{t("onboarding.guide_step3_title")}:</strong> {t("onboarding.guide_step3_desc")}
                   </li>
                   <li>
-                    <strong className="text-emerald-700">Tukarkan Poin:</strong> Kumpulkan poin untuk ditukarkan dengan voucher kuliner atau suvenir UMKM lokal secara langsung.
+                    <strong className="text-emerald-700">{t("onboarding.guide_step4_title")}:</strong> {t("onboarding.guide_step4_desc")}
                   </li>
                 </ol>
                 <p className="text-[10px] text-slate-500 italic mt-2">
-                  * Aset karakter, hadiah, cerita, dan UI akan terus digunakan sepanjang petualanganmu.
+                  {t("onboarding.guide_footer")}
                 </p>
               </div>
 
@@ -313,7 +298,7 @@ export default function OnboardingPage() {
                 onClick={() => setShowGuide(false)}
                 className="w-full h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl uppercase tracking-wider cursor-pointer shadow-sm"
               >
-                Mengerti &amp; Tutup
+                {t("onboarding.guide_close")}
               </Button>
             </div>
           </div>
@@ -324,224 +309,154 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-dvh w-full flex flex-col md:flex-row bg-[#F8F7F4] overflow-hidden font-sans select-none relative">
+    <div className="min-h-dvh w-full flex items-center justify-center p-4 bg-[#F8F7F4] font-sans select-none relative overflow-hidden">
       
-      {/* 1. HERO VISUAL SIDE PANEL (60% Desktop / 40% Mobile) */}
-      <div className="w-full h-[40dvh] md:h-dvh md:w-[60%] relative overflow-hidden flex-shrink-0 bg-[#FAF8F5] border-b md:border-b-0 md:border-r border-[#E5E0D5]">
+      {/* 1. Full Screen Hero Background (Sharp and cover-fit) */}
+      <div className="absolute inset-0 z-0">
         <img 
           src="/images/ui/onboarding_hero.png" 
           alt="Adventure Backdrop" 
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          className="w-full h-full object-cover pointer-events-none select-none filter brightness-95"
         />
-        <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-transparent to-slate-950/20 z-0" />
-
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#E5E0D5] shadow-sm">
-          <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-4.5 w-4.5 object-contain" />
-          <span className="text-[9px] font-black text-slate-800 tracking-widest">SINOPIQUEST</span>
-        </div>
+        <div className="absolute inset-0 bg-slate-950/20 z-0" />
       </div>
 
-      {/* 2. SIDEBAR CONTENT PANEL (40% Desktop / 60% Mobile) */}
-      <div className="w-full h-[60dvh] md:h-dvh md:w-[40%] bg-[#F8F7F4] flex flex-col justify-between p-6 md:p-10 overflow-y-auto scrollbar-thin scrollbar-thumb-[#E5E0D5] relative z-10 border-l border-[#E5E0D5] shadow-lg">
+      {/* Floating Language Toggle (Top Right of Screen) */}
+      <div className="absolute top-4 right-4 z-25">
+        <LanguageToggle />
+      </div>
+
+      {/* 2. CENTERED FLOATING GLASSMORPHIC CARD */}
+      <div className="w-full max-w-sm bg-white/90 backdrop-blur-md rounded-3xl border border-white/50 p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between gap-6 relative z-10 animate-fade-in">
         
-        {/* Floating Language Toggle */}
-        <div className="absolute top-4 right-4 z-20">
-          <LanguageToggle />
-        </div>
-
-        <div className="w-full max-w-sm mx-auto flex-1 flex flex-col justify-between py-2">
-          
-          {/* Top Header of Sidebar */}
-          <div className="flex flex-col items-center text-center space-y-3 pt-4 md:pt-8 flex-shrink-0">
-            <img 
-              src="/images/ui/logo.jpeg" 
-              alt="SinopiQuest Logo" 
-              className="w-28 h-28 object-contain drop-shadow-[0_4px_16px_rgba(16,185,129,0.25)] transition-transform hover:scale-105 duration-300" 
-            />
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-800 tracking-widest leading-none">
-                SINOPI QUEST
-              </h2>
-              <p className="text-[9.5px] font-extrabold text-emerald-600 uppercase tracking-widest">
-                Simulasi Penjelajahan Digital &amp; Warisan Nusantara
-              </p>
-            </div>
-          </div>
-
-          {/* Middle Form / Content Area */}
-          <div className="flex-1 flex flex-col justify-start pt-6 md:pt-14 pb-6">
-            
-            {showDevLogin ? (
-              /* Developer Mock Sign-In Form */
-              <form onSubmit={handleMockLoginSubmit} className="flex flex-col gap-4 text-left w-full bg-white p-5 rounded-2xl border border-[#E5E0D5] shadow-sm">
-                <div className="space-y-1 text-center">
-                  <h3 className="text-sm font-bold text-slate-800">Developer Mock Login</h3>
-                  <p className="text-[10px] text-slate-500">Masuk tanpa kredensial Google</p>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Nama Petualang</label>
-                    <Input
-                      type="text"
-                      placeholder="e.g. Wira Nusa"
-                      value={devName}
-                      onChange={(e) => setDevName(e.target.value)}
-                      required
-                      className="h-10 text-xs border-[#E5E0D5] focus-visible:ring-emerald-500 font-semibold bg-white rounded-xl text-slate-800"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Email (Mock)</label>
-                    <Input
-                      type="email"
-                      placeholder="e.g. dev-user@sirupi.space"
-                      value={devEmail}
-                      onChange={(e) => setDevEmail(e.target.value)}
-                      required
-                      className="h-10 text-xs border-[#E5E0D5] focus-visible:ring-emerald-500 font-semibold bg-white rounded-xl text-slate-800"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowDevLogin(false)}
-                    className="flex-1 h-10 text-xs font-bold text-slate-700 border-[#E5E0D5] bg-white rounded-xl hover:bg-slate-50"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1 h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl"
-                  >
-                    Sign In
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              /* Step 1 Sign-In & Name Form */
-              <div className="flex flex-col gap-5 text-center items-center w-full">
-                
-                {isAuthenticated && user ? (
-                  /* Authenticated User Preview Card */
-                  <div className="w-full bg-white border border-[#E5E0D5] p-4 rounded-2xl text-left space-y-3 shadow-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 border border-[#E5E0D5]">
-                        {user.avatarUrl ? (
-                          <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs font-black text-emerald-600">
-                            {user.name.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-xs font-bold text-slate-800 block truncate">{user.name}</span>
-                        <span className="text-[9px] font-bold text-slate-500 block truncate">{user.email}</span>
-                      </div>
-                      <BadgeRole role={user.role} />
-                    </div>
-                    
-                    <div className="flex gap-2 pt-1">
-                      {isAdmin && (
-                        <Button
-                          onClick={() => navigate("/admin")}
-                          className="flex-1 h-9 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-1.5 uppercase tracking-wider shadow-sm"
-                        >
-                          <Settings className="h-3.5 w-3.5" />
-                          <span>Panel Admin</span>
-                        </Button>
-                      )}
-                      <Button
-                        variant="outline"
-                        onClick={signOut}
-                        className="h-9 text-[10px] font-bold text-slate-700 border-[#E5E0D5] bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5"
-                      >
-                        <LogOut className="h-3.5 w-3.5" />
-                        <span>Keluar</span>
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  /* Sign In Buttons Trigger */
-                  <div className="w-full space-y-3 flex flex-col items-center">
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-slate-800">Masuk Terlebih Dahulu</h3>
-                      <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
-                        Masuk dengan akun Google untuk memulai petualangan
-                      </p>
-                    </div>
-
-                    {/* Google GSI button container */}
-                    <div id="google-signin-btn" className="w-fit" />
-
-                    <Button
-                      onClick={() => setShowDevLogin(true)}
-                      variant="ghost"
-                      className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-wider cursor-pointer"
-                    >
-                      Bypass / Developer Mock Login
-                    </Button>
-                  </div>
-                )}
-
-                {/* Primary Proceed Action */}
-                <div className="space-y-3 w-full border-t border-[#E5E0D5] pt-4">
-                  <div className="space-y-1">
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                      Konfirmasi Nama Petualang
-                    </h3>
-                    <div className="relative">
-                      <Input
-                        type="text"
-                        placeholder="e.g. Wira Nusa"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        maxLength={15}
-                        disabled={isAuthenticated}
-                        className="h-11 text-center text-xs border-[#E5E0D5] focus-visible:ring-emerald-500 font-semibold bg-white rounded-xl pr-10 pl-4 text-slate-800 placeholder:text-slate-400 disabled:opacity-85 shadow-inner"
-                      />
-                      <span className="absolute right-4 top-3.5 text-[9px] font-bold text-slate-400">
-                        {name.length}/15
-                      </span>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleNextStep}
-                    disabled={!name.trim()}
-                    className="w-full h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md rounded-full hover:scale-[1.01] active:scale-95 transition-all tracking-wider flex items-center justify-center gap-2 uppercase cursor-pointer"
-                  >
-                    <User className="h-4 w-4" />
-                    <span>Pilih Karakter</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bottom of Sidebar */}
-          <div className="space-y-3 pt-3 border-t border-[#E5E0D5] flex-shrink-0 w-full text-center">
-            <div className="flex justify-center gap-4">
-              <span className="text-[8px] font-bold text-slate-500 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> BILINGUAL AKTIF
-              </span>
-              <span className="text-[8px] font-bold text-slate-500 flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-blue-500" /> REAL-TIME GPS
-              </span>
-            </div>
-            <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
-              Aman &amp; Terenkripsi
+        {/* Top Header of Card */}
+        <div className="flex flex-col items-center text-center space-y-4 w-full">
+          <img 
+            src="/images/ui/logo.jpeg" 
+            alt="SinopiQuest Logo" 
+            className="w-24 h-24 object-contain rounded-full border-2 border-emerald-500/20 bg-white p-1.5 shadow-md transition-transform hover:scale-105 duration-300" 
+          />
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-slate-800 tracking-widest leading-none">
+              SINOPI QUEST
+            </h2>
+            <p className="text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest">
+              {t("app.tagline")}
             </p>
           </div>
+        </div>
 
+        {/* Middle Form / Content Area */}
+        <div className="w-full flex flex-col gap-5 text-center items-center">
+          
+          {isAuthenticated && user ? (
+            /* Authenticated User Preview Card */
+            <div className="w-full bg-white/50 border border-slate-200/50 p-4 rounded-2xl text-left space-y-3 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs font-black text-emerald-600">
+                      {user.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-slate-800 block truncate">{user.name}</span>
+                  <span className="text-[9px] font-bold text-slate-500 block truncate">{user.email}</span>
+                </div>
+                <BadgeRole role={user.role} />
+              </div>
+              
+              <div className="flex gap-2 pt-1">
+                {isAdmin && (
+                  <Button
+                    onClick={() => navigate("/admin")}
+                    className="flex-1 h-9 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-1.5 uppercase tracking-wider shadow-sm"
+                  >
+                    <Settings className="h-3.5 w-3.5" />
+                    <span>Panel Admin</span>
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={signOut}
+                  className="h-9 text-[10px] font-bold text-slate-700 border-slate-200 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span>{t("onboarding.logout")}</span>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Sign In Buttons Trigger */
+            <div className="w-full space-y-4 flex flex-col items-center">
+              <div className="space-y-1">
+                <h3 className="text-sm font-black text-slate-800">{t("onboarding.please_signin")}</h3>
+                <p className="text-[10px] text-slate-500 font-semibold leading-relaxed max-w-[240px] mx-auto">
+                  {t("onboarding.signin_desc")}
+                </p>
+              </div>
+
+              {/* Google GSI button container */}
+              <div id="google-signin-btn" className="w-fit" />
+            </div>
+          )}
+
+          {/* Primary Proceed Action - Only show if authenticated */}
+          {isAuthenticated && (
+            <div className="space-y-3 w-full border-t border-slate-200/50 pt-4">
+              <div className="space-y-1">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  {t("onboarding.confirm_name")}
+                </h3>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="e.g. Wira Nusa"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={15}
+                    disabled={isAuthenticated}
+                    className="h-11 text-center text-xs border-slate-200 focus-visible:ring-emerald-500 font-semibold bg-white rounded-xl pr-10 pl-4 text-slate-800 placeholder:text-slate-400 disabled:opacity-85 shadow-inner"
+                  />
+                  <span className="absolute right-4 top-3.5 text-[9px] font-bold text-slate-400">
+                    {name.length}/15
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleNextStep}
+                disabled={!name.trim()}
+                className="w-full h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md rounded-full hover:scale-[1.01] active:scale-95 transition-all tracking-wider flex items-center justify-center gap-2 uppercase cursor-pointer"
+              >
+                <User className="h-4 w-4" />
+                <span>{t("onboarding.choose_character")}</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom of Card (Footer) */}
+        <div className="w-full border-t border-slate-200/50 pt-4 text-center space-y-2">
+          <div className="flex justify-center gap-4">
+            <span className="text-[8px] font-bold text-slate-500 flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> BILINGUAL AKTIF
+            </span>
+            <span className="text-[8px] font-bold text-slate-500 flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" /> REAL-TIME GPS
+            </span>
+          </div>
+          <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+            Aman &amp; Terenkripsi
+          </p>
         </div>
 
       </div>
+
     </div>
   );
 }

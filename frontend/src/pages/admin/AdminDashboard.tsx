@@ -49,18 +49,18 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6 text-left animate-in fade-in duration-300">
       <div>
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Dashboard Utama</h2>
-        <p className="text-xs font-semibold text-slate-500 mt-1">Ringkasan data simulasi petualangan SinopiQuest RPG.</p>
+        <h2 className="text-xl font-black text-slate-800 tracking-tight">Dashboard Utama</h2>
+        <p className="text-xs text-slate-400 mt-0.5 font-normal">Ringkasan data simulasi petualangan SinopiQuest RPG.</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
-            <Card key={card.label} className="border-[#E5E0D5] bg-white shadow-sm hover:shadow-md transition-shadow duration-300">
+            <Card key={card.label} className="border-slate-200/80 bg-white shadow-sm hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 rounded-2xl overflow-hidden">
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">{card.label}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">{card.label}</span>
                   <span className="text-2xl font-black text-slate-800 block leading-none">{card.count}</span>
                 </div>
                 <div className={`p-3 rounded-xl border ${card.color}`}>
@@ -72,12 +72,12 @@ export default function AdminDashboard() {
         })}
       </div>
 
-      <div className="bg-[#FAF8F5] border border-[#E5E0D5] p-6 rounded-2xl space-y-4 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Mekanisme Pengelolaan Konten</h3>
-        <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+      <div className="bg-slate-50 border border-slate-200/85 p-6 rounded-2xl space-y-3.5 shadow-sm">
+        <h3 className="text-sm font-bold text-slate-800 tracking-tight">Mekanisme Pengelolaan Konten</h3>
+        <p className="text-xs text-slate-500 leading-relaxed font-normal">
           Melalui panel admin ini, Anda dapat menambahkan destinasi wisata baru, memperbarui alur misi beserta objectives pendukungnya, membuka cerita, mendaftarkan mitra UMKM, dan menyetel musik latar. Seluruh data disinkronisasikan ke peta game secara real-time.
         </p>
-        <div className="pt-3 border-t border-[#E5E0D5] flex flex-wrap gap-4 text-[10px] font-extrabold text-emerald-600 uppercase tracking-widest">
+        <div className="pt-3 border-t border-slate-200 flex flex-wrap gap-4 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
           <span>✓ Fleksibel</span>
           <span>✓ Bilingual Aktif</span>
           <span>✓ Real-time Update</span>

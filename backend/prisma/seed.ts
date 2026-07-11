@@ -766,26 +766,38 @@ async function main() {
   console.log(`🎵 Created ${songsData.length} BGM songs.`);
 
   // ==========================================
-  // 7. Seed Admin User
+  // 7. Seed Admin Users
   // ==========================================
-  const adminEmail = process.env.ADMIN_EMAIL || "wira.nusa@gmail.com";
-  const superAdmin = await prisma.user.create({
-    data: {
-      email: adminEmail,
-      name: "Wira Nusa (Super Admin)",
-      role: "super_admin",
-      profile: {
-        create: {
-          characterId: "explorer",
-          level: 1,
-          currentXp: 0,
-          totalPoints: 0,
-          gold: 100,
+  const superAdminsData = [
+    {
+      email: process.env.ADMIN_EMAIL || "sultanapri86@gmail.com",
+      name: "Sultan Apri (Super Admin)",
+    },
+    {
+      email: "musyaffi28@gmail.com",
+      name: "Musyaffi (Super Admin)",
+    },
+  ];
+
+  for (const admin of superAdminsData) {
+    await prisma.user.create({
+      data: {
+        email: admin.email,
+        name: admin.name,
+        role: "super_admin",
+        profile: {
+          create: {
+            characterId: "explorer",
+            level: 1,
+            currentXp: 0,
+            totalPoints: 0,
+            gold: 100,
+          },
         },
       },
-    },
-  });
-  console.log(`👑 Created Super Admin with email: ${adminEmail}`);
+    });
+    console.log(`👑 Created Super Admin with email: ${admin.email}`);
+  }
 
   console.log("🌱 Seeding completed successfully!");
 }

@@ -44,6 +44,15 @@ umkmRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { id, name, descId, descEn, category, products, imageUrl, rating, voucherAvailable, locationId } = body;
 
+    if (!name || !descId || !descEn || !category || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: name, descId, descEn, category, locationId" }, 400);
+    }
+
+    if (id) {
+      const existing = await prisma.umkm.findUnique({ where: { id } });
+      if (existing) return c.json({ error: "UMKM dengan ID tersebut sudah ada" }, 409);
+    }
+
     const newUmkm = await prisma.umkm.create({
       data: {
         id: id || undefined,
@@ -60,6 +69,7 @@ umkmRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(newUmkm, 201);
   } catch (err: any) {
+    if (err.code === "P2002") return c.json({ error: "UMKM dengan ID tersebut sudah ada" }, 409);
     return c.json({ error: "Failed to create UMKM: " + err.message }, 500);
   }
 });
@@ -69,6 +79,10 @@ umkmRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const { name, descId, descEn, category, products, imageUrl, rating, voucherAvailable, locationId } = body;
+
+    if (!name || !descId || !descEn || !category || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: name, descId, descEn, category, locationId" }, 400);
+    }
 
     const updatedUmkm = await prisma.umkm.update({
       where: { id },
@@ -86,6 +100,7 @@ umkmRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(updatedUmkm);
   } catch (err: any) {
+    if (err.code === "P2025") return c.json({ error: "UMKM tidak ditemukan" }, 404);
     return c.json({ error: "Failed to update UMKM: " + err.message }, 500);
   }
 });

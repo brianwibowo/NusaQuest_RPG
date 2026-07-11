@@ -1,7 +1,7 @@
 const API_BASE = "";
 
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem("nusaquest_token");
+  const token = localStorage.getItem("sinopiquest_token");
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {

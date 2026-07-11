@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2, BookOpen, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, BookOpen, Loader2, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
+import FieldGroup from "@/components/admin/FieldGroup";
 
 interface StoryItem {
   id: string;
@@ -15,7 +16,7 @@ interface StoryItem {
   category: string;
   imageUrl?: string;
   locationId: string;
-  unlockedByQuestId?: string;
+  unlockedByQuestId?: string | null;
 }
 
 interface LocationItem {
@@ -28,6 +29,8 @@ interface QuestItem {
   titleId: string;
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function AdminStories() {
   const toast = useToast();
   const [stories, setStories] = useState<StoryItem[]>([]);
@@ -36,6 +39,20 @@ export default function AdminStories() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StoryItem | null>(null);
+
+  // Stepper State
+  const [formStep, setFormStep] = useState(1);
+
+  // Filter & Page State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [brokenImages, setBrokenImages] = useState<Record<string, boolean>>({});
+
+  // UX & UAT Enhancement States
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [wasValidated, setWasValidated] = useState(false);
 
   // Form Fields
   const [storyId, setStoryId] = useState("");
@@ -50,11 +67,16 @@ export default function AdminStories() {
   const [uploading, setUploading] = useState(false);
 
   const categories = [
-    { value: "budaya", label: "Budaya" },
-    { value: "sejarah", label: "Sejarah" },
-    { value: "legenda", label: "Legenda / Mitos" },
-    { value: "kuliner", label: "Kuliner" },
-    { value: "lingkungan", label: "Lingkungan / Alam" },
+    { value: "budaya", label: "Budaya", color: "bg-amber-600" },
+    { value: "sejarah", label: "Sejarah", color: "bg-rose-600" },
+    { value: "legenda", label: "Legenda / Mitos", color: "bg-purple-600" },
+    { value: "kuliner", label: "Kuliner", color: "bg-orange-600" },
+    { value: "lingkungan", label: "Lingkungan / Alam", color: "bg-emerald-600" },
+  ];
+
+  const stepLabels = [
+    { num: 1, title: "Identitas Cerita" },
+    { num: 2, title: "Narasi & Media" },
   ];
 
   const fetchDependencies = async () => {
@@ -80,12 +102,19 @@ export default function AdminStories() {
   };
 
   useEffect(() => {
-    fetchStories();
     fetchDependencies();
+    fetchStories();
   }, []);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory]);
 
   const handleOpenAdd = () => {
     setEditingItem(null);
+    setFormStep(1);
+    setWasValidated(false);
     setStoryId("");
     setTitleId("");
     setTitleEn("");
@@ -100,6 +129,8 @@ export default function AdminStories() {
 
   const handleOpenEdit = (item: StoryItem) => {
     setEditingItem(item);
+    setFormStep(1);
+    setWasValidated(false);
     setStoryId(item.id);
     setTitleId(item.titleId);
     setTitleEn(item.titleEn);
@@ -134,7 +165,7 @@ export default function AdminStories() {
       const data = await res.json();
       setImageUrl(data.url);
       toast.success("Gambar berhasil diunggah!");
-    } catch (err) {
+    } catch {
       toast.error("Gagal mengunggah gambar");
     } finally {
       setUploading(false);
@@ -143,6 +174,22 @@ export default function AdminStories() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setWasValidated(true);
+
+    if (formStep < 2) {
+      if (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId) {
+        toast.error("Harap lengkapi semua kolom identitas wajib!");
+        return;
+      }
+      setFormStep(2);
+      return;
+    }
+
+    if (!contentId.trim() || !contentEn.trim()) {
+      toast.error("Harap lengkapi narasi cerita!");
+      return;
+    }
+
     const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       id: storyId || undefined,
@@ -169,17 +216,19 @@ export default function AdminStories() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Request failed");
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Request failed");
+      }
       setIsOpen(false);
-      toast.success(editingItem ? "Kisah berhasil diperbarui!" : "Kisah baru berhasil ditambahkan!");
+      toast.success(editingItem ? "Data kisah berhasil diperbarui!" : "Kisah baru berhasil ditambahkan!");
       fetchStories();
-    } catch (err) {
-      toast.error("Gagal menyimpan cerita");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menyimpan data kisah");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus cerita ini?")) return;
     const token = localStorage.getItem("sinopiquest_token");
 
     try {
@@ -191,227 +240,492 @@ export default function AdminStories() {
       if (!res.ok) throw new Error("Delete failed");
       toast.success("Kisah berhasil dihapus!");
       fetchStories();
-    } catch (err) {
-      toast.error("Gagal menghapus cerita");
+    } catch {
+      toast.error("Gagal menghapus kisah");
     }
   };
 
+  // ── Filter and Pagination ──
+  const filteredStories = stories.filter((story) => {
+    const matchSearch = !searchQuery || 
+      story.titleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      story.titleEn.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchCat = !filterCategory || story.category === filterCategory;
+    return matchSearch && matchCat;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredStories.length / ITEMS_PER_PAGE));
+  const paginatedStories = filteredStories.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const getCatLabel = (val: string) => categories.find(c => c.value === val)?.label || val;
+  const getCatColor = (val: string) => categories.find(c => c.value === val)?.color || "bg-slate-600";
+  const getLocationName = (id: string) => locations.find(l => l.id === id)?.nameId || id;
+  const getQuestTitle = (id: string) => quests.find(q => q.id === id)?.titleId || id;
+
+  // Reusable input classes
+  const inputClass = "h-10 text-sm border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
+  const selectClass = "w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all";
+  const textareaClass = "w-full p-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-normal focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none resize-none transition-all";
+
   return (
-    <div className="space-y-6 text-left animate-in fade-in duration-300">
-      <div className="flex justify-between items-center">
+    <div className="space-y-5 text-left animate-in fade-in duration-300">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Kisah Cerita</h2>
-          <p className="text-xs font-semibold text-slate-500 mt-1">Kelola naskah narasi sejarah, budaya, dan legenda nusantara.</p>
+          <h2 className="text-xl font-black text-slate-800 tracking-tight">Kelola Kisah Cerita</h2>
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">Tulis cerita lokal, dongeng, dan fakta sejarah destinasi wisata.</p>
         </div>
         <Button
           onClick={handleOpenAdd}
-          className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-1.5 uppercase tracking-wider shadow-sm"
+          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
         >
           <Plus className="h-4 w-4" />
           <span>Tambah Cerita</span>
         </Button>
       </div>
 
+      {/* Filter Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+        <div className="relative sm:col-span-2">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari judul cerita..."
+            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-xl"
+          />
+        </div>
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all"
+        >
+          <option value="">Semua Kategori</option>
+          {categories.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+      </div>
+
+      <p className="text-[11px] text-slate-400 font-normal px-1">
+        Menampilkan <span className="font-semibold text-slate-600">{paginatedStories.length}</span> dari {filteredStories.length} cerita
+      </p>
+
+      {/* Grid */}
       {loading ? (
-        <div className="py-20 flex justify-center items-center">
-          <Loader2 className="h-8 w-8 text-emerald-500 animate-spin" />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm rounded-2xl animate-pulse">
+              <div>
+                <div className="h-44 bg-slate-100 w-full" />
+                <div className="p-5 space-y-3">
+                  <div className="h-5 bg-slate-200/70 rounded-lg w-2/3" />
+                  <div className="h-3 bg-slate-200/70 rounded-lg w-1/3" />
+                  <div className="space-y-2 pt-2">
+                    <div className="h-3 bg-slate-200/70 rounded-lg w-full" />
+                    <div className="h-3 bg-slate-200/70 rounded-lg w-[90%]" />
+                    <div className="h-3 bg-slate-200/70 rounded-lg w-[70%]" />
+                  </div>
+                  <div className="pt-4 border-t border-slate-100 flex gap-4">
+                    <div className="h-3 bg-slate-200/70 rounded-lg w-1/3" />
+                    <div className="h-3 bg-slate-200/70 rounded-lg w-1/3" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-5 pt-0 flex gap-2">
+                <div className="h-9 bg-slate-100 rounded-lg flex-1" />
+                <div className="h-9 bg-slate-100 rounded-lg flex-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : paginatedStories.length === 0 ? (
+        <div className="py-20 text-center text-slate-400 text-sm font-normal bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
+          {searchQuery || filterCategory 
+            ? "Tidak ada data kisah yang cocok dengan pencarian Anda." 
+            : "Belum ada kisah cerita yang terdaftar."}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stories.map((story) => (
-            <Card key={story.id} className="border-[#E5E0D5] bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow duration-300">
-              <div>
-                <div className="h-40 bg-[#F2EFE9] relative overflow-hidden">
-                  {story.imageUrl ? (
-                    <img src={story.imageUrl} alt={story.titleId} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400 bg-[#F2EFE9]">
-                      <BookOpen className="h-12 w-12" />
-                    </div>
-                  )}
-                  <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-md">
-                    {story.category}
-                  </span>
-                </div>
-                <CardContent className="p-5 space-y-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-800 leading-tight">{story.titleId}</h3>
-                    <span className="text-[10px] font-bold text-slate-400 block mt-0.5">{story.titleEn}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {paginatedStories.map((story) => {
+            const isBroken = !!brokenImages[story.id];
+            return (
+              <div key={story.id} className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
+                <div>
+                  <div 
+                    onClick={() => story.imageUrl && !isBroken && setPreviewImageUrl(story.imageUrl)}
+                    className={`h-44 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden ${
+                      story.imageUrl && !isBroken ? "cursor-zoom-in" : ""
+                    }`}
+                  >
+                    {story.imageUrl && !isBroken ? (
+                      <img 
+                        src={story.imageUrl} 
+                        alt={story.titleId} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        onError={() => setBrokenImages(prev => ({ ...prev, [story.id]: true }))}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-slate-300">
+                        <BookOpen className="h-10 w-10 animate-pulse" />
+                      </div>
+                    )}
+                    <span className={`absolute top-3 left-3 text-white text-[8px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-md ${getCatColor(story.category)}`}>
+                      {getCatLabel(story.category)}
+                    </span>
                   </div>
-                  <p className="text-xs text-slate-600 font-semibold leading-relaxed line-clamp-3">
-                    {story.contentId}
-                  </p>
-                </CardContent>
-              </div>
+                  <CardContent className="p-5 space-y-2.5">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 leading-tight">{story.titleId}</h3>
+                      <span className="text-[10px] text-slate-400 block mt-0.5 font-normal">{story.titleEn}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 font-normal">
+                      {story.contentId}
+                    </p>
+                    <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-x-4 gap-y-1 text-[9px] uppercase tracking-wider font-normal text-slate-400">
+                      <span>Lokasi: {getLocationName(story.locationId)}</span>
+                      {story.unlockedByQuestId && (
+                        <span>Pembuka: {getQuestTitle(story.unlockedByQuestId)}</span>
+                      )}
+                    </div>
+                  </CardContent>
+                </div>
 
-              <div className="p-5 pt-0 flex gap-2">
-                <Button
-                  onClick={() => handleOpenEdit(story)}
-                  variant="outline"
-                  className="flex-1 h-9 text-xs font-bold text-slate-700 border-[#E5E0D5] hover:bg-slate-50 flex items-center gap-1.5 bg-white"
-                >
-                  <Edit2 className="h-3.5 w-3.5" />
-                  <span>Ubah</span>
-                </Button>
-                <Button
-                  onClick={() => handleDelete(story.id)}
-                  variant="ghost"
-                  className="flex-1 h-9 text-xs font-bold text-red-600 hover:text-red-500 hover:bg-red-50 flex items-center gap-1.5"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  <span>Hapus</span>
-                </Button>
+                <div className="p-5 pt-0 flex gap-2">
+                  <Button
+                    onClick={() => handleOpenEdit(story)}
+                    variant="outline"
+                    className="flex-1 h-9 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 bg-white rounded-lg"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    <span>Ubah</span>
+                  </Button>
+                  <Button
+                    onClick={() => setDeleteConfirmId(story.id)}
+                    variant="ghost"
+                    className="flex-1 h-9 text-xs font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-1.5 rounded-lg"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Hapus</span>
+                  </Button>
+                </div>
               </div>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Add / Edit Dialog */}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
+            className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Sebelumnya</span>
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button key={page} onClick={() => setCurrentPage(page)}
+                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
+                  page === currentPage
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <Button variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}
+            className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
+          >
+            <span className="hidden sm:inline">Selanjutnya</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Dialog Form */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="bg-white border border-[#E5E0D5] text-slate-800 max-w-3xl overflow-y-auto max-h-[85vh] rounded-2xl shadow-2xl p-6">
-          <DialogHeader>
-            <DialogTitle className="text-base font-black uppercase tracking-widest text-slate-800">
-              {editingItem ? "Ubah Naskah Cerita" : "Tambah Naskah Cerita"}
+        <DialogContent className="bg-white border border-slate-200/80 text-slate-800 max-w-2xl overflow-y-auto max-h-[90vh] rounded-2xl shadow-2xl p-0 gap-0">
+          <DialogHeader className="px-6 sm:px-8 pt-6 pb-0">
+            <DialogTitle className="text-lg font-black text-slate-800 tracking-tight">
+              {editingItem ? "Ubah Kisah Cerita" : "Tambah Kisah Cerita Baru"}
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs font-bold mt-2">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">ID Cerita (Kustom)</label>
-                <Input
-                  value={storyId}
-                  onChange={(e) => setStoryId(e.target.value)}
-                  placeholder="e.g. story_monas_new"
-                  disabled={!!editingItem}
-                  className="h-9 text-xs border-[#E5E0D5] bg-white text-slate-800 focus-visible:ring-emerald-500"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Judul (ID)</label>
-                <Input
-                  value={titleId}
-                  onChange={(e) => setTitleId(e.target.value)}
-                  placeholder="e.g. Kisah Monas Baru"
-                  required
-                  className="h-9 text-xs border-[#E5E0D5] bg-white text-slate-800 focus-visible:ring-emerald-500"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Judul (EN)</label>
-                <Input
-                  value={titleEn}
-                  onChange={(e) => setTitleEn(e.target.value)}
-                  placeholder="e.g. Story of New Monas"
-                  required
-                  className="h-9 text-xs border-[#E5E0D5] bg-white text-slate-800 focus-visible:ring-emerald-500"
-                />
-              </div>
+          {/* Stepper Progress */}
+          <div className="px-6 sm:px-8 pt-5 pb-3">
+            <div className="flex items-center gap-0">
+              {stepLabels.map((s, i) => (
+                <div key={s.num} className="flex items-center flex-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (s.num === 2 && (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId)) {
+                        toast.error("Harap isi identitas cerita sebelum menulis narasi!");
+                        return;
+                      }
+                      setFormStep(s.num);
+                    }}
+                    className={`flex items-center gap-2 transition-all ${
+                      formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
+                    }`}
+                  >
+                    <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${
+                      formStep > s.num
+                        ? "bg-emerald-600 text-white"
+                        : formStep === s.num
+                        ? "bg-emerald-600 text-white ring-[3px] ring-emerald-100"
+                        : "bg-slate-100 text-slate-400"
+                    }`}>
+                      {formStep > s.num ? <Check className="h-4 w-4" /> : s.num}
+                    </span>
+                    <span className={`text-xs hidden sm:inline ${
+                      formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
+                    }`}>
+                      {s.title}
+                    </span>
+                  </button>
+                  {i < stepLabels.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${
+                      formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
+                    }`} />
+                  )}
+                </div>
+              ))}
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Kategori Cerita</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-[#E5E0D5] bg-white text-slate-800 font-bold text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Upload Gambar</label>
-                <div className="relative">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadImage}
-                    disabled={uploading}
-                    className="h-9 text-xs border-[#E5E0D5] bg-white text-slate-800 file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-extrabold file:bg-slate-100 file:text-slate-700"
-                  />
-                  {uploading && <Loader2 className="absolute right-3 top-2.5 h-4 w-4 text-emerald-500 animate-spin" />}
+          <form onSubmit={handleSubmit} className="px-6 sm:px-8 pb-6">
+            
+            {/* Step 1: Identitas Cerita */}
+            {formStep === 1 && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <p className="text-xs text-slate-400 font-normal">Tentukan kode ID unik cerita, judul, dan relasi lokasi.</p>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <FieldGroup label="ID Kisah Unik" hint="Gunakan kode huruf kecil & underscore (contoh: sejarah_lawang_sewu)">
+                    <Input 
+                      value={storyId} 
+                      onChange={(e) => setStoryId(e.target.value)} 
+                      placeholder="sejarah_lawang_sewu" 
+                      required 
+                      disabled={!!editingItem}
+                      className={`${inputClass} ${wasValidated && !storyId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    />
+                  </FieldGroup>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Judul Kisah (Indonesia)">
+                    <Input 
+                      value={titleId} 
+                      onChange={(e) => setTitleId(e.target.value)} 
+                      placeholder="contoh: Misteri Sumur Lawang Sewu" 
+                      required 
+                      className={`${inputClass} ${wasValidated && !titleId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Judul Kisah (Inggris)">
+                    <Input 
+                      value={titleEn} 
+                      onChange={(e) => setTitleEn(e.target.value)} 
+                      placeholder="contoh: Mystery of Lawang Sewu" 
+                      required 
+                      className={`${inputClass} ${wasValidated && !titleEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    />
+                  </FieldGroup>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <FieldGroup label="Kategori Cerita">
+                    <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
+                      {categories.map((cat) => (
+                        <option key={cat.value} value={cat.value}>{cat.label}</option>
+                      ))}
+                    </select>
+                  </FieldGroup>
+
+                  <FieldGroup label="Lokasi Terkait">
+                    <select value={locationId} onChange={(e) => setLocationId(e.target.value)} className={selectClass}>
+                      {locations.map((loc) => (
+                        <option key={loc.id} value={loc.id}>{loc.nameId}</option>
+                      ))}
+                    </select>
+                  </FieldGroup>
+
+                  <FieldGroup label="Misi Pembuka (Opsional)">
+                    <select value={unlockedByQuestId} onChange={(e) => setUnlockedByQuestId(e.target.value)} className={selectClass}>
+                      <option value="">Terbuka Otomatis</option>
+                      {quests.map((q) => (
+                        <option key={q.id} value={q.id}>{q.titleId}</option>
+                      ))}
+                    </select>
+                  </FieldGroup>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Lokasi Cerita</label>
-                <select
-                  value={locationId}
-                  onChange={(e) => setLocationId(e.target.value)}
-                  required
-                  className="w-full h-9 px-3 rounded-md border border-[#E5E0D5] bg-white text-slate-800 font-bold text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                >
-                  <option value="">Pilih Lokasi...</option>
-                  {locations.map((loc) => (
-                    <option key={loc.id} value={loc.id}>{loc.nameId}</option>
-                  ))}
-                </select>
+            {/* Step 2: Narasi & Media */}
+            {formStep === 2 && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <p className="text-xs text-slate-400 font-normal">Tuliskan isi cerita lengkap dalam dua bahasa serta unggah cover cerita.</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Cover Foto Kisah" hint="Unggah gambar representasi cerita">
+                    <div className="relative">
+                      <Input type="file" accept="image/*" onChange={handleUploadImage} disabled={uploading}
+                        className="h-10 text-sm border-slate-200 bg-white text-slate-800 font-normal rounded-xl file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700"
+                      />
+                      {uploading && <Loader2 className="absolute right-3 top-3 h-4 w-4 text-emerald-500 animate-spin" />}
+                    </div>
+                  </FieldGroup>
+                  {imageUrl && (
+                    <div className="h-20 w-full overflow-hidden rounded-xl border border-slate-200 relative">
+                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Narasi Cerita (Indonesia)">
+                    <textarea 
+                      value={contentId} 
+                      onChange={(e) => setContentId(e.target.value)} 
+                      placeholder="Tuliskan dongeng atau sejarah lengkap di sini..." 
+                      required 
+                      rows={6} 
+                      className={`${textareaClass} ${wasValidated && !contentId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    />
+                  </FieldGroup>
+                  <FieldGroup label="Narasi Cerita (Inggris)">
+                    <textarea 
+                      value={contentEn} 
+                      onChange={(e) => setContentEn(e.target.value)} 
+                      placeholder="Write down the detailed story or historical facts here..." 
+                      required 
+                      rows={6} 
+                      className={`${textareaClass} ${wasValidated && !contentEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    />
+                  </FieldGroup>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Di-unlock Oleh Quest</label>
-                <select
-                  value={unlockedByQuestId}
-                  onChange={(e) => setUnlockedByQuestId(e.target.value)}
-                  className="w-full h-9 px-3 rounded-md border border-[#E5E0D5] bg-white text-slate-800 font-bold text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-                >
-                  <option value="">Tidak Dikunci / Mulai Terbuka...</option>
-                  {quests.map((q) => (
-                    <option key={q.id} value={q.id}>{q.titleId}</option>
-                  ))}
-                </select>
+            )}
+
+            {/* Footer Navigation */}
+            <DialogFooter className="pt-6 flex justify-between gap-2 border-t border-slate-100 mt-6">
+              <div>
+                {formStep > 1 && (
+                  <Button type="button" variant="outline" onClick={() => setFormStep(s => s - 1)}
+                    className="h-10 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Sebelumnya
+                  </Button>
+                )}
               </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Konten Cerita (ID)</label>
-              <textarea
-                value={contentId}
-                onChange={(e) => setContentId(e.target.value)}
-                placeholder="Tulis naskah cerita lengkap dalam Bahasa Indonesia..."
-                required
-                rows={4}
-                className="w-full p-3 rounded-md border border-[#E5E0D5] bg-white text-slate-800 text-xs font-semibold focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-[10px] text-slate-500 uppercase tracking-wider block">Konten Cerita (EN)</label>
-              <textarea
-                value={contentEn}
-                onChange={(e) => setContentEn(e.target.value)}
-                placeholder="Write the full story script in English..."
-                required
-                rows={4}
-                className="w-full p-3 rounded-md border border-[#E5E0D5] bg-white text-slate-800 text-xs font-semibold focus:ring-1 focus:ring-emerald-500 focus:outline-none"
-              />
-            </div>
-
-            <DialogFooter className="pt-4 flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsOpen(false)}
-                className="h-10 text-xs font-bold text-slate-700 border-[#E5E0D5] hover:bg-slate-50 bg-white"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                disabled={uploading}
-                className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm"
-              >
-                Simpan
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}
+                  className="h-10 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
+                >
+                  Batal
+                </Button>
+                {formStep < 2 && (
+                  <Button 
+                    key="btn-next-story"
+                    type="button" 
+                    onClick={() => {
+                      if (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId) {
+                        setWasValidated(true);
+                        toast.error("Harap isi identitas cerita sebelum menulis narasi!");
+                        return;
+                      }
+                      setFormStep(2);
+                    }}
+                    className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 rounded-xl"
+                  >
+                    Selanjutnya <ChevronRight className="h-4 w-4" />
+                  </Button>
+                )}
+                {formStep === 2 && (
+                  <Button 
+                    key="btn-submit-story"
+                    type="submit" 
+                    disabled={uploading}
+                    className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm rounded-xl"
+                  >
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
+                    Simpan Cerita
+                  </Button>
+                )}
+              </div>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Premium Lightbox Overlay */}
+      {previewImageUrl && (
+        <div 
+          onClick={() => setPreviewImageUrl(null)}
+          className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out animate-in fade-in duration-200"
+        >
+          <div className="relative max-w-5xl max-h-[90vh]">
+            <img 
+              src={previewImageUrl} 
+              alt="Pratinjau Kisah" 
+              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none animate-in zoom-in-95 duration-200" 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button 
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-all shadow-md text-lg font-bold"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="bg-white border border-slate-200/80 text-slate-800 max-w-sm rounded-2xl p-6 shadow-2xl text-left">
+          <DialogHeader>
+            <DialogTitle className="text-base font-black text-slate-800 tracking-tight">Hapus Kisah Cerita?</DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              Apakah Anda yakin ingin menghapus kisah cerita ini? Pemain tidak akan dapat membuka narasi ini lagi. Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 mt-2 justify-end">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setDeleteConfirmId(null)}
+              className="h-9 px-4 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => {
+                if (deleteConfirmId) {
+                  handleDelete(deleteConfirmId);
+                  setDeleteConfirmId(null);
+                }
+              }}
+              className="h-9 px-4 text-xs font-bold bg-red-600 hover:bg-red-500 text-white rounded-xl shadow-sm"
+            >
+              Hapus Permanen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

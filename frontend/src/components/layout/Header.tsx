@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayer } from "@/context/PlayerContext";
-import { Globe, Menu, BookOpen, ShoppingBag, Trophy, Home, User, Swords, Gift, Map, Volume2, VolumeX } from "lucide-react";
+import { Globe, Menu, BookOpen, ShoppingBag, Trophy, Home, User, Swords, Gift, Map, Volume2, VolumeX, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
@@ -9,10 +9,12 @@ import { getLevelDefinition } from "@/lib/xp";
 import { Link, useLocation } from "react-router-dom";
 import { audioManager } from "@/lib/audio";
 import { hapticsManager } from "@/lib/haptics";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Header() {
   const { t, i18n } = useTranslation();
   const { player, dispatch } = usePlayer();
+  const { isAuthenticated, signOut } = useAuth();
   const location = useLocation();
   const [isMuted, setIsMuted] = useState(audioManager.getMutedState());
 
@@ -35,6 +37,13 @@ export default function Header() {
       audioManager.playClick();
     }
     hapticsManager.triggerClick();
+  };
+
+  const handleLogout = () => {
+    audioManager.playClick();
+    hapticsManager.triggerClick();
+    signOut();
+    dispatch({ type: "RESET_GAME" });
   };
 
   const menuItems = [
@@ -63,7 +72,7 @@ export default function Header() {
               <SheetContent side="left" className="w-64 p-4 border-r-slate-100 bg-white flex flex-col gap-4">
                 <SheetHeader className="pb-2 border-b border-slate-100">
                   <SheetTitle className="flex items-center gap-1.5 text-left text-base font-bold text-emerald-700">
-                    <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-5 w-5 object-contain" />
+                    <img src="/images/ui/logo.jpeg" alt="Logo" className="h-5 w-5 object-contain rounded-full border border-emerald-500/25 bg-white p-0.5 shadow-sm" />
                     <span>{t("app.name")}</span>
                   </SheetTitle>
                 </SheetHeader>
@@ -92,7 +101,7 @@ export default function Header() {
           )}
 
           <Link to="/" className="flex items-center gap-1.5 text-base font-bold text-emerald-700 tracking-tight select-none">
-            <img src="/images/ui/logo_icon.jpeg" alt="Logo" className="h-5 w-5 object-contain" />
+            <img src="/images/ui/logo.jpeg" alt="Logo" className="h-5 w-5 object-contain rounded-full border border-emerald-500/25 bg-white p-0.5 shadow-sm" />
             <span>{t("app.name")}</span>
           </Link>
         </div>
@@ -122,6 +131,17 @@ export default function Header() {
           >
             <Globe className="h-4 w-4" />
           </Button>
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="h-8 w-8 text-rose-500 hover:text-rose-700 hover:bg-rose-50/50"
+              title="Keluar"
+            >
+              <LogOut className="h-4.5 w-4.5" />
+            </Button>
+          )}
         </div>
       </div>
     </header>

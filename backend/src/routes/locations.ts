@@ -57,6 +57,11 @@ locationRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { nameId, nameEn, descId, descEn, category, latitude, longitude, imageUrl, addressId, addressEn } = body;
 
+    // Validasi field wajib
+    if (!nameId || !nameEn || !descId || !descEn || !category || latitude == null || longitude == null) {
+      return c.json({ error: "Field wajib belum lengkap: nameId, nameEn, descId, descEn, category, latitude, longitude" }, 400);
+    }
+
     const newLocation = await prisma.location.create({
       data: {
         nameId,
@@ -73,6 +78,7 @@ locationRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(newLocation, 201);
   } catch (err: any) {
+    if (err.code === "P2002") return c.json({ error: "Lokasi dengan ID tersebut sudah ada" }, 409);
     return c.json({ error: "Failed to create location: " + err.message }, 500);
   }
 });
@@ -82,6 +88,10 @@ locationRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
     const { nameId, nameEn, descId, descEn, category, latitude, longitude, imageUrl, addressId, addressEn } = body;
+
+    if (!nameId || !nameEn || !descId || !descEn || !category || latitude == null || longitude == null) {
+      return c.json({ error: "Field wajib belum lengkap: nameId, nameEn, descId, descEn, category, latitude, longitude" }, 400);
+    }
 
     const updatedLocation = await prisma.location.update({
       where: { id },
@@ -100,6 +110,7 @@ locationRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(updatedLocation);
   } catch (err: any) {
+    if (err.code === "P2025") return c.json({ error: "Lokasi tidak ditemukan" }, 404);
     return c.json({ error: "Failed to update location: " + err.message }, 500);
   }
 });

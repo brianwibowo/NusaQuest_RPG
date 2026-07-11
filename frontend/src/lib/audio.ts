@@ -8,7 +8,7 @@ class AudioManager {
 
   constructor() {
     // Load mute state from localStorage
-    const savedMute = localStorage.getItem("nusaquest_muted");
+    const savedMute = localStorage.getItem("sinopiquest_muted");
     this.isMuted = savedMute === "true";
   }
 
@@ -162,7 +162,7 @@ class AudioManager {
    */
   public toggleMute(): boolean {
     this.isMuted = !this.isMuted;
-    localStorage.setItem("nusaquest_muted", String(this.isMuted));
+    localStorage.setItem("sinopiquest_muted", String(this.isMuted));
     
     if (this.bgm) {
       this.bgm.muted = this.isMuted;

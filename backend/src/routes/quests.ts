@@ -58,7 +58,6 @@ questRoutes.get("/:id", async (c) => {
     return c.json({ error: "Failed to fetch quest: " + err.message }, 500);
   }
 });
-
 questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
@@ -81,6 +80,16 @@ questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
       reward,
       battleId,
     } = body;
+
+    // Validasi field wajib
+    if (!titleId || !titleEn || !descId || !descEn || !type || !difficulty || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, descId, descEn, type, difficulty, locationId" }, 400);
+    }
+
+    if (id) {
+      const existing = await prisma.quest.findUnique({ where: { id } });
+      if (existing) return c.json({ error: "Misi dengan ID tersebut sudah ada" }, 409);
+    }
 
     const newQuest = await prisma.quest.create({
       data: {
@@ -132,6 +141,7 @@ questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
 
     return c.json(newQuest, 201);
   } catch (err: any) {
+    if (err.code === "P2002") return c.json({ error: "Misi dengan ID tersebut sudah ada" }, 409);
     return c.json({ error: "Failed to create quest: " + err.message }, 500);
   }
 });
@@ -158,6 +168,11 @@ questRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
       reward,
       battleId,
     } = body;
+
+    // Validasi field wajib
+    if (!titleId || !titleEn || !descId || !descEn || !type || !difficulty || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, descId, descEn, type, difficulty, locationId" }, 400);
+    }
 
     if (objectives) {
       await prisma.questObjective.deleteMany({ where: { questId: id } });
@@ -223,6 +238,7 @@ questRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
 
     return c.json(updatedQuest);
   } catch (err: any) {
+    if (err.code === "P2025") return c.json({ error: "Misi tidak ditemukan" }, 404);
     return c.json({ error: "Failed to update quest: " + err.message }, 500);
   }
 });

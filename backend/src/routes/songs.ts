@@ -31,6 +31,10 @@ songRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { name, fileUrl, isActive } = body;
 
+    if (!name || !fileUrl) {
+      return c.json({ error: "Field wajib belum lengkap: name, fileUrl" }, 400);
+    }
+
     if (isActive) {
       await prisma.song.updateMany({ data: { isActive: false } });
     }
@@ -54,6 +58,10 @@ songRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { name, fileUrl, isActive } = body;
 
+    if (!name || !fileUrl) {
+      return c.json({ error: "Field wajib belum lengkap: name, fileUrl" }, 400);
+    }
+
     if (isActive) {
       await prisma.song.updateMany({
         where: { id: { not: id } },
@@ -71,6 +79,7 @@ songRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     });
     return c.json(updatedSong);
   } catch (err: any) {
+    if (err.code === "P2025") return c.json({ error: "Lagu tidak ditemukan" }, 404);
     return c.json({ error: "Failed to update song: " + err.message }, 500);
   }
 });

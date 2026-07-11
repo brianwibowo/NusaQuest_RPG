@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Sinopi Quest - Masuk</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&amp;family=Inter:wght@400;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#3c4a42",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#95d3ba",
+                        "on-secondary-container": "#83c2a9",
+                        "secondary-container": "#0b513d",
+                        "error": "#ffb4ab",
+                        "primary": "#4edea3",
+                        "surface": "#101415",
+                        "surface-bright": "#363a3b",
+                        "surface-container-high": "#272a2c",
+                        "on-surface-variant": "#bbcabf",
+                        "tertiary-container": "#54add4",
+                        "on-tertiary": "#003547",
+                        "tertiary-fixed-dim": "#7bd1fa",
+                        "secondary-fixed": "#b0f0d6",
+                        "primary-container": "#10b981",
+                        "on-primary-fixed-variant": "#005236",
+                        "surface-dim": "#101415",
+                        "on-tertiary-fixed": "#001e2b",
+                        "on-tertiary-container": "#003e53",
+                        "on-secondary-fixed-variant": "#0b513d",
+                        "inverse-primary": "#006c49",
+                        "outline": "#86948a",
+                        "on-background": "#e0e3e5",
+                        "inverse-surface": "#e0e3e5",
+                        "on-primary-container": "#00422b",
+                        "surface-variant": "#323537",
+                        "on-secondary-fixed": "#002117",
+                        "error-container": "#93000a",
+                        "on-surface": "#e0e3e5",
+                        "on-primary": "#003824",
+                        "primary-fixed-dim": "#4edea3",
+                        "surface-tint": "#4edea3",
+                        "tertiary": "#7bd1fa",
+                        "surface-container-highest": "#323537",
+                        "inverse-on-surface": "#2d3133",
+                        "secondary": "#95d3ba",
+                        "on-secondary": "#003829",
+                        "surface-container-lowest": "#0b0f10",
+                        "surface-container-low": "#191c1e",
+                        "surface-container": "#1d2022",
+                        "primary-fixed": "#6ffbbe",
+                        "on-tertiary-fixed-variant": "#004d66",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#c0e8ff",
+                        "on-primary-fixed": "#002113",
+                        "background": "#101415"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "section-gap": "64px",
+                        "container-padding-mobile": "20px",
+                        "gutter": "24px",
+                        "container-padding-desktop": "40px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Montserrat"],
+                        "body-md": ["Inter"],
+                        "display-lg-mobile": ["Montserrat"],
+                        "display-lg": ["Montserrat"],
+                        "title-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.15em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "title-sm": ["18px", { "lineHeight": "1.5", "letterSpacing": "0.02em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(16, 20, 21, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .shimmer-btn {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%) rotate(45deg);
+            }
+
+            100% {
+                transform: translateX(100%) rotate(45deg);
+            }
+        }
+
+        .ambient-glow {
+            filter: blur(80px);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* Hide navigation shells as per instructions for transactional/onboarding flows */
+        .nav-hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-surface text-on-surface font-body-md overflow-hidden h-screen w-full flex items-center justify-center">
+    <!-- Background Layer -->
+    <div class="fixed inset-0 z-0">
+        <div class="absolute inset-0 bg-black/40 z-10"></div>
+        <img alt="Indonesian Fantasy Landscape"
+            class="w-full h-full object-cover scale-105 animate-[pulse_10s_infinite_alternate]"
+            src="https://lh3.googleusercontent.com/aida/AP1WRLtIYoS-VfXlvXG79BoH10qG5plfTtxWSvY_cCe3qeH8K6ukxCirJxk-a7fsLqFpByPNfSgbRsakWrHknx-JghemCLIFHvRtFSnP2s5XcsLKKVcCVJUhiYiB4ee1xAnd_C5XqtKDYNOZSXZZZ7dIXlLMfn4mJZmXN5WtlZ0nCVNLJoRZmXMJDleMG9NcITtn5EKpYvw5ry_W82gaQqXrfDasnRBeea5Yzzhh2CwdWmOdcqbPQ2_h9nu3Khr1" />
+        <!-- Animated Accents -->
+        <div class="ambient-glow absolute top-1/4 -left-20 w-96 h-96 bg-primary rounded-full"></div>
+        <div class="ambient-glow absolute bottom-1/4 -right-20 w-96 h-96 bg-secondary rounded-full"></div>
+    </div>
+    <!-- Main Content Canvas -->
+    <main class="relative z-20 w-full max-w-[390px] px-6 h-full flex flex-col justify-center items-center">
+        <!-- Mobile Header (Simplified) -->
+        <header class="absolute top-8 left-0 w-full px-8 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary"
+                    style="font-variation-settings: 'FILL' 1;">language</span>
+                <span class="font-label-caps text-label-caps text-on-surface">ID</span>
+            </div>
+            <button
+                class="w-10 h-10 flex items-center justify-center rounded-xl glass-card transition-transform active:scale-90">
+                <span class="material-symbols-outlined text-primary">menu</span>
+            </button>
+        </header>
+        <!-- Vertical Glassmorphic Login Card -->
+        <div
+            class="glass-card w-full rounded-[32px] p-8 flex flex-col items-center text-center space-y-8 animate-[fadeIn_0.8s_ease-out]">
+            <!-- Brand Cluster -->
+            <div class="space-y-4">
+                <div class="relative w-24 h-24 mx-auto group">
+                    <div
+                        class="absolute inset-0 bg-primary/20 blur-xl group-hover:bg-primary/40 transition-colors rounded-full">
+                    </div>
+                    <img alt="Sinopi Quest Logo"
+                        class="relative z-10 w-full h-full object-contain drop-shadow-[0_0_15px_rgba(78,222,163,0.5)]"
+                        src="https://lh3.googleusercontent.com/aida/AP1WRLsn9gRDOJvMYg61-qN1tOE9B_weHF_atbYj72zKNbBOWRnt64UfT6aTeEtOouyrpSeii2M2GgnGceT6WfoCWM6qEN40hdvPh-lO0gUBOYLsYHap_Yql-wB4xoG5kSKkcROm3MWbcl8MglmZLcCWkFDZ3a4ccopOu8zSDrG6vjsxo_O3apCZVukkBRIFGybkBDqCtgu7Y7cKm3QCwn1rSw20y72rqzx37IRbBNxIYmsvF6J7QYUMpe7fxYny" />
+                </div>
+                <div class="space-y-1">
+                    <h1 class="font-headline-md text-headline-md font-bold tracking-[0.2em] text-on-surface uppercase">
+                        SINOPI QUEST</h1>
+                    <p class="font-label-caps text-[10px] text-primary tracking-[0.3em] font-bold">BERMAIN, MENJELAJAH,
+                        MELINDUNGI</p>
+                </div>
+            </div>
+            <!-- Login Section -->
+            <div class="w-full space-y-6">
+                <div class="space-y-2">
+                    <h2 class="font-title-sm text-title-sm text-on-surface font-semibold">Masuk Terlebih Dahulu</h2>
+                    <p class="text-on-surface-variant text-[14px] leading-relaxed px-4">Masuk dengan akun Google untuk
+                        memulai petualangan</p>
+                </div>
+                <!-- Google Auth Button -->
+                <button
+                    class="shimmer-btn w-full py-4 bg-white rounded-2xl flex items-center justify-center gap-4 transition-all duration-300 hover:shadow-[0_0_25px_rgba(78,222,163,0.3)] active:scale-[0.98]">
+                    <svg class="w-6 h-6" viewbox="0 0 24 24">
+                        <path
+                            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            fill="#4285F4"></path>
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853"></path>
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+                            fill="#FBBC05"></path>
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335"></path>
+                    </svg>
+                    <span class="font-body-md text-surface font-bold">Login dengan Google</span>
+                </button>
+                <!-- Help link -->
+                <a class="inline-block font-label-caps text-[11px] text-on-surface-variant hover:text-primary transition-colors border-b border-transparent hover:border-primary pb-0.5"
+                    href="#">Lupa Akun atau Butuh Bantuan?</a>
+            </div>
+            <!-- Status Indicator Stack -->
+            <div class="w-full pt-6 border-t border-white/10 flex flex-col items-center gap-3">
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#4edea3]"></span>
+                        <span class="font-label-caps text-[10px] text-on-surface tracking-wider">BILINGUAL AKTIF</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_#7bd1fa]"></span>
+                        <span class="font-label-caps text-[10px] text-on-surface tracking-wider">REAL-TIME GPS</span>
+                    </div>
+                </div>
+                <p class="font-label-caps text-[9px] text-on-surface-variant/60 uppercase tracking-widest">AMAN &amp;
+                    TERENKRIPSI</p>
+            </div>
+        </div>
+        <!-- Footer Actions -->
+        <footer
+            class="absolute bottom-10 left-0 w-full px-10 flex justify-center items-center gap-8 text-on-surface-variant/40">
+            <a class="font-label-caps text-[10px] transition-colors hover:text-primary" href="#">KEBIJAKAN PRIVASI</a>
+            <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+            <a class="font-label-caps text-[10px] transition-colors hover:text-primary" href="#">KETENTUAN LAYANAN</a>
+        </footer>
+    </main>
+    <!-- Contextual FAB (Hidden on Login per Instruction) -->
+    <div class="hidden">
+        <button
+            class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">help_outline</span>
+        </button>
+    </div>
+    <!-- Micro-interaction Script -->
+    <script>
+        document.addEventListener('mousemove', (e) => {
+            const glow1 = document.querySelector('.ambient-glow:first-child');
+            const glow2 = document.querySelector('.ambient-glow:last-child');
+
+            const moveX = (e.clientX - window.innerWidth / 2) * 0.05;
+            const moveY = (e.clientY - window.innerHeight / 2) * 0.05;
+
+            glow1.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            glow2.style.transform = `translate(${-moveX}px, ${-moveY}px)`;
+        });
+
+        // Simple Fade-in Animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>
