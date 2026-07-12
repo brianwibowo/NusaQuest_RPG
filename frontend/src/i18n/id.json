@@ -3,7 +3,6 @@
     "name": "SinopiQuest",
     "tagline": "Bermain, Menjelajah, Melindungi"
   },
-
   "nav": {
     "home": "Beranda",
     "explore": "Jelajahi",
@@ -11,7 +10,6 @@
     "rewards": "Hadiah",
     "profile": "Profil"
   },
-
   "onboarding": {
     "welcome": "Selamat Datang, Penjelajah!",
     "intro": "Kamu terpilih untuk menghidupkan kembali Peta Warisan Lokal yang mulai terlupakan. Jelajahi destinasi, selesaikan misi, dan buka cerita tersembunyi Nusantara.",
@@ -40,7 +38,6 @@
     "guide_footer": "* Aset karakter, hadiah, cerita, dan UI akan terus digunakan sepanjang petualanganmu.",
     "guide_close": "Mengerti & Tutup"
   },
-
   "home": {
     "greeting": "Halo, {{name}}!",
     "active_quests": "Misi Aktif",
@@ -52,10 +49,11 @@
     "explore_map": "Jelajahi Peta",
     "view_quests": "Lihat Misi"
   },
-
   "quest": {
     "title": "Misi",
+    "subtitle": "Hidupkan kembali tradisi Nusantara yang mulai terlupakan.",
     "all": "Semua",
+    "available": "Tersedia",
     "start": "Mulai Misi",
     "continue": "Lanjutkan",
     "completed": "Selesai",
@@ -74,7 +72,6 @@
     "xp_earned": "+{{amount}} XP",
     "points_earned": "+{{amount}} Poin"
   },
-
   "battle": {
     "title": "Tantangan",
     "question": "Pertanyaan {{current}} dari {{total}}",
@@ -88,7 +85,6 @@
     "next": "Selanjutnya",
     "finish": "Selesai"
   },
-
   "character": {
     "title": "Karakter",
     "level": "Level",
@@ -99,7 +95,6 @@
     "badges": "Badge",
     "no_badges": "Belum ada badge"
   },
-
   "reward": {
     "title": "Hadiah",
     "badges": "Badge",
@@ -110,7 +105,6 @@
     "obtained": "Diperoleh",
     "cost": "{{amount}} Poin"
   },
-
   "story": {
     "title": "Cerita",
     "locked": "Selesaikan misi untuk membuka cerita ini",
@@ -123,7 +117,6 @@
       "lingkungan": "Lingkungan"
     }
   },
-
   "umkm": {
     "title": "UMKM Lokal",
     "products": "Produk",
@@ -138,21 +131,18 @@
       "jasa": "Jasa"
     }
   },
-
   "map": {
     "title": "Peta Jelajah",
     "filter": "Filter",
     "all_locations": "Semua Lokasi",
     "view_quests": "Lihat Misi"
   },
-
   "leaderboard": {
     "title": "Peringkat",
     "rank": "Peringkat",
     "player": "Pemain",
     "you": "Kamu"
   },
-
   "profile": {
     "title": "Profil",
     "journey_history": "Riwayat Perjalanan",
@@ -162,7 +152,6 @@
     "reset_confirm": "Yakin ingin mereset semua progres?",
     "language": "Bahasa"
   },
-
   "common": {
     "back": "Kembali",
     "cancel": "Batal",

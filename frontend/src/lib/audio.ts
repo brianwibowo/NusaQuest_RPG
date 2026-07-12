@@ -5,6 +5,7 @@ class AudioManager {
   private isMuted: boolean = false;
   private normalVolume: number = 0.15;
   private duckVolume: number = 0.03;
+  private isBgmLoading: boolean = false;
 
   constructor() {
     // Load mute state from localStorage
@@ -13,52 +14,90 @@ class AudioManager {
   }
 
   /**
-   * Initialize and play the BGM starting from 17 seconds
+   * Fetch the active BGM URL from backend, fallback to default adventure music
    */
-  public playBgm() {
-    if (this.bgm) return; // Already playing
-
-    this.bgm = new Audio("/audio/bgm_adventure.mp3");
-    this.bgm.volume = 0.15; // Soft ambient volume
-    this.bgm.muted = this.isMuted;
-
-    // Set starting position to 17 seconds (skip first 16 seconds)
-    this.bgm.currentTime = 17;
-
-    // Loop logic: When it reaches the end, reset back to 17 seconds
-    this.bgm.addEventListener("timeupdate", () => {
-      if (this.bgm && this.bgm.currentTime >= this.bgm.duration - 0.5) {
-        this.bgm.currentTime = 17;
-      }
-    });
-
-    // Fallback: If loop is enabled, ensure it handles resetting
-    this.bgm.addEventListener("ended", () => {
-      if (this.bgm) {
-        this.bgm.currentTime = 17;
-        this.bgm.play().catch((err) => console.log("BGM loop play blocked:", err));
-      }
-    });
-
-    this.bgm.play().catch((err) => {
-      // Browsers block autoplay before user interaction
-      console.log("BGM autoplay blocked until user interaction:", err);
-      
-      // Auto-retry on first click
-      const enableAudio = () => {
-        if (this.bgm) {
-          this.bgm.play().catch((e) => console.log("Audio retry failed:", e));
+  private async getActiveBgmUrl(): Promise<{ url: string; skipIntro: boolean }> {
+    try {
+      const res = await fetch("/api/songs");
+      if (res.ok) {
+        const songs = await res.json();
+        const activeSong = songs.find((s: any) => s.isActive);
+        if (activeSong && activeSong.fileUrl) {
+          return { url: activeSong.fileUrl, skipIntro: false };
         }
-        window.removeEventListener("click", enableAudio);
-      };
-      window.addEventListener("click", enableAudio);
-    });
+      }
+    } catch (e) {
+      console.error("Failed to load active BGM from API, using default fallback:", e);
+    }
+    return { url: "/audio/bgm_adventure.mp3", skipIntro: true };
+  }
+
+  /**
+   * Initialize and play the active BGM from database
+   */
+  public async playBgm() {
+    if (this.bgm) return; // Already playing
+    if (this.isBgmLoading) return; // Already loading BGM
+
+    this.isBgmLoading = true;
+
+    try {
+      const { url, skipIntro } = await this.getActiveBgmUrl();
+      
+      // If stopBgm was called while fetching, abort playing
+      if (!this.isBgmLoading) return;
+
+      this.bgm = new Audio(url);
+      this.bgm.volume = this.normalVolume;
+      this.bgm.muted = this.isMuted;
+
+      if (skipIntro) {
+        // Set starting position to 17 seconds (skip first 16 seconds of default BGM)
+        this.bgm.currentTime = 17;
+
+        // Loop logic: When it reaches the end, reset back to 17 seconds
+        this.bgm.addEventListener("timeupdate", () => {
+          if (this.bgm && this.bgm.currentTime >= this.bgm.duration - 0.5) {
+            this.bgm.currentTime = 17;
+          }
+        });
+
+        // Fallback: If loop is enabled, ensure it handles resetting
+        this.bgm.addEventListener("ended", () => {
+          if (this.bgm) {
+            this.bgm.currentTime = 17;
+            this.bgm.play().catch((err) => console.log("BGM loop play blocked:", err));
+          }
+        });
+      } else {
+        this.bgm.loop = true;
+      }
+
+      this.bgm.play().catch((err) => {
+        // Browsers block autoplay before user interaction
+        console.log("BGM autoplay blocked until user interaction:", err);
+        
+        // Auto-retry on first click
+        const enableAudio = () => {
+          if (this.bgm) {
+            this.bgm.play().catch((e) => console.log("Audio retry failed:", e));
+          }
+          window.removeEventListener("click", enableAudio);
+        };
+        window.addEventListener("click", enableAudio);
+      });
+    } catch (e) {
+      console.error("Error initializing dynamic BGM:", e);
+    } finally {
+      this.isBgmLoading = false;
+    }
   }
 
   /**
    * Stop the BGM
    */
   public stopBgm() {
+    this.isBgmLoading = false;
     if (this.bgm) {
       this.bgm.pause();
       this.bgm = null;

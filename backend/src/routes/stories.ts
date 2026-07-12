@@ -16,6 +16,7 @@ const storyRoutes = new Hono<Env>();
 storyRoutes.get("/", async (c) => {
   try {
     const stories = await prisma.story.findMany({
+      include: { location: true },
       orderBy: { createdAt: "desc" },
     });
     return c.json(stories.map(mapStory));
@@ -29,6 +30,7 @@ storyRoutes.get("/:id", async (c) => {
   try {
     const story = await prisma.story.findUnique({
       where: { id },
+      include: { location: true },
     });
     if (!story) {
       return c.json({ error: "Story not found" }, 404);

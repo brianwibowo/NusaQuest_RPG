@@ -18,13 +18,15 @@ import { calculateDistance } from "@/lib/geo";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { audioManager } from "@/lib/audio";
 import { hapticsManager } from "@/lib/haptics";
-import { ArrowLeft, Clock, Award, Trophy, Play, ShieldAlert, MapPin, CheckCircle, Navigation } from "lucide-react";
+import { useToast } from "@/context/ToastContext";
+import { ArrowLeft, Clock, Award, Trophy, Play, ShieldAlert, MapPin, CheckCircle, Navigation, Camera, Store, Coins, BookOpen } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function QuestDetailPage() {
   const { t } = useTranslation();
   const { questId } = useParams<{ questId: string }>();
   const { player, dispatch } = usePlayer();
+  const toast = useToast();
   const lang = player.language || "id";
 
   const [quest, setQuest] = useState<Quest | null>(null);
@@ -40,6 +42,11 @@ export default function QuestDetailPage() {
   const [isSimulated, setIsSimulated] = useState(false);
   const [distanceInfo, setDistanceInfo] = useState<string | null>(null);
 
+  // Interactive objective states
+  const [savedPhotos, setSavedPhotos] = useState<Record<string, string>>({});
+  const [activeReviewObjId, setActiveReviewObjId] = useState<string | null>(null);
+  const [reviewText, setReviewText] = useState("");
+
   useEffect(() => {
     if (!questId) return;
     setIsLoading(true);
@@ -48,12 +55,46 @@ export default function QuestDetailPage() {
       getStories()
     ])
       .then(([qData, sData]) => {
+        // Load saved objective progress from localStorage
+        let savedCompletedIds: string[] = [];
+        try {
+          const saved = localStorage.getItem("sinopiquest_completed_objectives");
+          if (saved) {
+            savedCompletedIds = JSON.parse(saved);
+          }
+        } catch (e) {
+          console.error("Failed to load objectives from localStorage", e);
+        }
+
+        // Merge saved completed objectives
+        if (qData && qData.objectives) {
+          qData.objectives = qData.objectives.map((obj: any) => ({
+            ...obj,
+            completed: obj.completed || savedCompletedIds.includes(obj.id),
+          }));
+        }
+
         setQuest(qData);
         setStories(sData);
       })
       .catch((err) => console.error("Quest detail load failed", err))
       .finally(() => setIsLoading(false));
   }, [questId]);
+
+  useEffect(() => {
+    const loadedPhotos: Record<string, string> = {};
+    if (quest && quest.objectives) {
+      quest.objectives.forEach((obj) => {
+        if (obj.type === "take_photo") {
+          const photo = localStorage.getItem(`sinopiquest_photo_${obj.id}`);
+          if (photo) {
+            loadedPhotos[obj.id] = photo;
+          }
+        }
+      });
+      setSavedPhotos(loadedPhotos);
+    }
+  }, [quest]);
 
   if (isLoading) {
     return <LoadingSpinner message={player.language === "id" ? "Memuat detail misi..." : "Loading quest details..."} />;
@@ -86,6 +127,22 @@ export default function QuestDetailPage() {
   const handleCompleteObjective = (objId: string, isChecked: boolean) => {
     if (!quest || !isActive || isCompleted) return;
 
+    // Persist to localStorage
+    try {
+      const saved = localStorage.getItem("sinopiquest_completed_objectives");
+      let completedIds: string[] = saved ? JSON.parse(saved) : [];
+      if (isChecked) {
+        if (!completedIds.includes(objId)) {
+          completedIds.push(objId);
+        }
+      } else {
+        completedIds = completedIds.filter(id => id !== objId);
+      }
+      localStorage.setItem("sinopiquest_completed_objectives", JSON.stringify(completedIds));
+    } catch (e) {
+      console.error("Failed to save objective progress", e);
+    }
+
     const updatedObjectives = quest.objectives.map((obj: QuestObjective) =>
       obj.id === objId ? { ...obj, completed: isChecked } : obj
     );
@@ -97,6 +154,18 @@ export default function QuestDetailPage() {
     const allDone = updatedObjectives.every((obj: QuestObjective) => obj.completed);
     if (allDone) {
       handleCompleteQuest();
+
+      // Clean up localStorage for objectives of this completed quest
+      try {
+        const saved = localStorage.getItem("sinopiquest_completed_objectives");
+        if (saved) {
+          let completedIds: string[] = JSON.parse(saved);
+          completedIds = completedIds.filter(id => !quest.objectives.some(o => o.id === id));
+          localStorage.setItem("sinopiquest_completed_objectives", JSON.stringify(completedIds));
+        }
+      } catch (e) {
+        console.error("Failed to clean completed objectives from localStorage", e);
+      }
     }
   };
 
@@ -152,6 +221,49 @@ export default function QuestDetailPage() {
     }
   };
 
+  // Objective Photo capture handler
+  const handleTakePhoto = (objId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result as string;
+      try {
+        localStorage.setItem(`sinopiquest_photo_${objId}`, base64String);
+        setSavedPhotos(prev => ({ ...prev, [objId]: base64String }));
+        audioManager.playSuccess();
+        hapticsManager.triggerSuccess();
+        handleCompleteObjective(objId, true);
+        toast.success(player.language === "id" ? "Foto berhasil disimpan!" : "Photo captured successfully!");
+      } catch (err) {
+        console.error("Failed to save photo to localStorage", err);
+        // Fallback: complete anyway
+        handleCompleteObjective(objId, true);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Simulated purchase handler
+  const handleSimulatePurchase = (objId: string) => {
+    audioManager.playSuccess();
+    hapticsManager.triggerSuccess();
+    handleCompleteObjective(objId, true);
+    toast.success(player.language === "id" ? "Pembelian produk berhasil disimulasikan!" : "Product purchase simulation successful!");
+  };
+
+  // Submit text review handler
+  const handleSubmitReview = (objId: string) => {
+    if (!reviewText.trim()) return;
+    audioManager.playSuccess();
+    hapticsManager.triggerSuccess();
+    handleCompleteObjective(objId, true);
+    toast.success(player.language === "id" ? "Ulasan berhasil dikirim!" : "Review submitted successfully!");
+    setReviewText("");
+    setActiveReviewObjId(null);
+  };
+
   // 3. Complete Quest & Claim Rewards
   const handleCompleteQuest = () => {
     // Check for level up beforehand
@@ -161,6 +273,13 @@ export default function QuestDetailPage() {
     const willLevelUp = player.currentXp + rewardXp >= nextLevelDef.requiredXp && player.level < 6;
 
     dispatch({ type: "COMPLETE_QUEST", questId: quest.id });
+
+    // Clean up photos from localStorage to prevent storage bloat
+    quest.objectives.forEach((obj) => {
+      if (obj.type === "take_photo") {
+        localStorage.removeItem(`sinopiquest_photo_${obj.id}`);
+      }
+    });
     dispatch({ type: "GAIN_XP", amount: rewardXp });
     dispatch({ type: "GAIN_POINTS", amount: rewardPoints });
 
@@ -319,12 +438,13 @@ export default function QuestDetailPage() {
             <div className="flex flex-col gap-2.5">
               {quest.objectives.map((obj: QuestObjective) => {
                 const isVisitLocation = obj.type === "visit_location";
+                const isInteractiveAction = obj.type === "answer_quiz" || obj.type === "visit_location" || obj.type === "take_photo" || obj.type === "buy_product" || obj.type === "write_review";
                 return (
                   <div key={obj.id} className="flex items-start gap-3 p-2.5 bg-slate-50/50 rounded-lg border border-slate-100">
                     <Checkbox
                       id={obj.id}
                       checked={isCompleted || obj.completed}
-                      disabled={isCompleted || !isActive || obj.type === "answer_quiz" || isVisitLocation}
+                      disabled={isCompleted || !isActive || isInteractiveAction}
                       onCheckedChange={(checked: boolean | "indeterminate") => handleCompleteObjective(obj.id, !!checked)}
                       className="mt-0.5 border-slate-300 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                     />
@@ -372,6 +492,136 @@ export default function QuestDetailPage() {
                             <Play className="h-3 w-3 fill-white" />
                             <span>{t("battle.title")} ({battle.title[lang]})</span>
                           </Button>
+                        </div>
+                      )}
+
+                      {/* Interactive Camera Objective Uploader */}
+                      {obj.type === "take_photo" && !obj.completed && !isCompleted && isActive && (
+                        <div className="pt-1.5">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            id={`photo-input-${obj.id}`}
+                            className="hidden"
+                            onChange={(e) => handleTakePhoto(obj.id, e)}
+                          />
+                          <label
+                            htmlFor={`photo-input-${obj.id}`}
+                            className="inline-flex h-7 px-3 text-[9px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white gap-1 items-center rounded-full tracking-wider cursor-pointer select-none"
+                          >
+                            <Camera className="h-3 w-3 mr-1" />
+                            <span>AMBIL FOTO</span>
+                          </label>
+                        </div>
+                      )}
+
+                      {obj.type === "take_photo" && (obj.completed || isCompleted) && (
+                        <div className="pt-1.5 space-y-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Foto Berhasil Diambil
+                          </span>
+                          {savedPhotos[obj.id] && (
+                            <div className="relative h-20 w-20 rounded-lg overflow-hidden border border-slate-200 shadow-sm mt-1">
+                              <img src={savedPhotos[obj.id]} alt="Captured objective" className="h-full w-full object-cover" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Interactive Shop Purchase Simulation */}
+                      {obj.type === "buy_product" && !obj.completed && !isCompleted && isActive && (
+                        <div className="pt-1.5 flex flex-wrap gap-2">
+                          {quest.relatedUmkmId && (
+                            <Button
+                              asChild
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-3 text-[9px] font-extrabold border-slate-200 text-slate-600 bg-white rounded-full tracking-wider"
+                            >
+                              <Link to={`/umkm/${quest.relatedUmkmId}`}>
+                                <Store className="h-3.5 w-3.5 mr-1 text-emerald-500" />
+                                KUNJUNGI TOKO
+                              </Link>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleSimulatePurchase(obj.id)}
+                            className="h-7 px-3 text-[9px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-full tracking-wider cursor-pointer"
+                          >
+                            <Coins className="h-3 w-3 mr-1 text-yellow-300" />
+                            SIMULASI BELI
+                          </Button>
+                        </div>
+                      )}
+
+                      {obj.type === "buy_product" && (obj.completed || isCompleted) && (
+                        <div className="pt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Produk Dibeli
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Interactive Review Form */}
+                      {obj.type === "write_review" && !obj.completed && !isCompleted && isActive && (
+                        <div className="pt-1.5 space-y-2">
+                          {activeReviewObjId === obj.id ? (
+                            <div className="space-y-2 bg-slate-100/80 p-2.5 rounded-lg border border-slate-200/50">
+                              <textarea
+                                placeholder={player.language === "id" ? "Tulis ulasan Anda di sini..." : "Write your review here..."}
+                                value={reviewText}
+                                onChange={(e) => setReviewText(e.target.value)}
+                                className="w-full text-xs p-2 rounded border border-slate-300 bg-white focus:outline-emerald-500 min-h-[60px]"
+                              />
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setActiveReviewObjId(null);
+                                    setReviewText("");
+                                  }}
+                                  className="h-6 text-[9px] text-slate-500 font-bold"
+                                >
+                                  Batal
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSubmitReview(obj.id)}
+                                  disabled={!reviewText.trim()}
+                                  className="h-6 px-2.5 text-[9px] bg-emerald-600 hover:bg-emerald-700 text-white font-black"
+                                >
+                                  Kirim Ulasan
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                audioManager.playClick();
+                                hapticsManager.triggerClick();
+                                setActiveReviewObjId(obj.id);
+                              }}
+                              className="h-7 px-3 text-[9px] font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-full tracking-wider cursor-pointer"
+                            >
+                              <BookOpen className="h-3.5 w-3.5 mr-1" />
+                              TULIS ULASAN
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                      {obj.type === "write_review" && (obj.completed || isCompleted) && (
+                        <div className="pt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wider">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            Ulasan Dikirim
+                          </span>
                         </div>
                       )}
                     </div>

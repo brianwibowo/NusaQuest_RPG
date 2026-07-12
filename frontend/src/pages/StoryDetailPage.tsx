@@ -104,9 +104,9 @@ export default function StoryDetailPage() {
               <span className="bg-[#8C6D42] text-white px-2.5 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-wider shadow-sm">
                 {t(`story.category.${story.category}`)}
               </span>
-              <div className="flex items-center gap-1 text-[10px] text-[#8C6D42] font-extrabold">
+              <div className="flex items-center gap-1 text-[10px] text-[#8C6D42] font-extrabold uppercase">
                 <MapPin className="h-3.5 w-3.5" />
-                <span>JAKARTA</span>
+                <span>{story.location ? story.location.name[lang] : "Nusantara"}</span>
               </div>
             </div>
             <h2 className="text-xl font-extrabold text-[#5A452C] leading-snug tracking-tight border-b-2 border-dashed border-[#D4B585]/50 pb-3 mt-2">

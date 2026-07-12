@@ -20,7 +20,11 @@ export default function LeaderboardPage() {
     getLeaderboard()
       .then(setDbLeaderboard)
       .catch(err => console.error(err))
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        setIsLoading(false);
+        const today = new Date().toDateString();
+        localStorage.setItem(`sinopiquest_daily_quest_3_completed_${today}`, "true");
+      });
   }, []);
 
   // Create runtime player entry for the leaderboard

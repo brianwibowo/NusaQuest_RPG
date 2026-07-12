@@ -92,7 +92,11 @@ export default function UmkmDetailPage() {
 
           <div className="flex items-center gap-1.5 text-xs text-slate-500 pt-3 border-t border-slate-50">
             <MapPin className="h-4 w-4 text-slate-400" />
-            <span>Setu Babakan, Jagakarsa</span>
+            <span>
+              {umkm.location 
+                ? (lang === "id" ? umkm.location.addressId || umkm.location.nameId : umkm.location.addressEn || umkm.location.nameEn)
+                : "Unknown Location"}
+            </span>
           </div>
         </CardContent>
       </Card>

@@ -5,6 +5,7 @@
  */
 
 import type { BilingualText } from "./character";
+import type { Location } from "./location";
 
 export type StoryCategory =
   | "budaya" | "sejarah" | "legenda" | "kuliner" | "lingkungan";
@@ -18,4 +19,5 @@ export interface Story {
   locationId: string;
   unlocked: boolean;
   unlockedByQuestId: string;
+  location?: Location;
 }

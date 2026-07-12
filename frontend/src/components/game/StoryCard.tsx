@@ -2,17 +2,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import type { Story, AppLanguage } from "@/types";
+import type { Story, AppLanguage, Quest } from "@/types";
 import { Lock, BookOpen } from "lucide-react";
 
 interface StoryCardProps {
   story: Story;
   lang: AppLanguage;
+  quests?: Quest[];
 }
 
 // Menampilkan card cerita lokal (terkunci dengan petunjuk misi atau terbuka untuk dibaca)
-export default function StoryCard({ story, lang }: StoryCardProps) {
+export default function StoryCard({ story, lang, quests }: StoryCardProps) {
   const { t } = useTranslation();
+  const requiredQuest = quests?.find((q) => q.id === story.unlockedByQuestId);
+  const questName = requiredQuest ? requiredQuest.title[lang] : "";
 
   return (
     <Card className={`overflow-hidden border-slate-100 bg-white transition-all hover:shadow-md ${!story.unlocked ? "bg-slate-50/50 opacity-75" : ""}`}>
@@ -56,7 +59,9 @@ export default function StoryCard({ story, lang }: StoryCardProps) {
             </div>
           ) : (
             <p className="text-[10px] text-slate-400 italic line-clamp-1 leading-relaxed">
-              {t("story.locked")}
+              {questName
+                ? (lang === "id" ? `Selesaikan misi: ${questName}` : `Complete quest: ${questName}`)
+                : t("story.locked")}
             </p>
           )}
         </div>

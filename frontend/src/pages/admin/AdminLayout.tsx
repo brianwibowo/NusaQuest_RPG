@@ -119,9 +119,8 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col md:flex-row font-sans transition-colors duration-200">
       {/* 1. Sidebar (Desktop Only) */}
       <aside
-        className={`hidden md:flex bg-[#091E15] border-r border-emerald-950/40 flex-col justify-between shrink-0 shadow-xl z-20 relative transition-all duration-300 ${
-          isCollapsed ? "md:w-20" : "md:w-64"
-        }`}
+        className={`hidden md:flex bg-[#091E15] border-r border-emerald-950/40 flex-col justify-between shrink-0 shadow-xl z-20 relative transition-all duration-300 ${isCollapsed ? "md:w-20" : "md:w-64"
+          }`}
       >
         {/* Toggle Collapse Desktop Button */}
         <button
@@ -161,13 +160,11 @@ export default function AdminLayout() {
                   key={item.to}
                   to={item.to}
                   title={isCollapsed ? item.label : ""}
-                  className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                    isCollapsed ? "md:justify-center md:px-0" : ""
-                  } ${
-                    isActive
+                  className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${isCollapsed ? "md:justify-center md:px-0" : ""
+                    } ${isActive
                       ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
                       : "text-emerald-100/50 hover:bg-white/5 hover:text-white"
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   {!isCollapsed && <span className="animate-in fade-in duration-200">{item.label}</span>}
@@ -178,7 +175,7 @@ export default function AdminLayout() {
         </div>
 
         {/* User context & Back actions */}
-        <div className={`p-4 md:p-6 border-t border-emerald-950/60 space-y-4 bg-black/10 ${isCollapsed ? "md:px-3" : ""}`}>
+        <div className={`p-4 md:p-6 border-t border-emerald-950/60 space-y-4 ${isCollapsed ? "md:px-3" : ""}`}>
 
 
           <div className="flex flex-col gap-2 pt-1">
@@ -186,9 +183,8 @@ export default function AdminLayout() {
               onClick={() => navigate("/")}
               variant="outline"
               title="Kembali Ke Game"
-              className={`w-full h-9 text-[10px] font-semibold text-emerald-300 border-emerald-900/60 hover:bg-white/5 hover:text-white gap-2 bg-transparent rounded-xl transition-all ${
-                isCollapsed ? "md:justify-center md:px-0" : "justify-start"
-              }`}
+              className={`w-full h-9 text-[10px] font-semibold text-emerald-300 border-emerald-900/60 hover:bg-white/5 hover:text-white gap-2 bg-transparent rounded-xl transition-all ${isCollapsed ? "md:justify-center md:px-0" : "justify-start"
+                }`}
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               {!isCollapsed && <span className="animate-in fade-in duration-200">Kembali Ke Game</span>}
@@ -197,9 +193,8 @@ export default function AdminLayout() {
               onClick={handleLogout}
               title="Keluar Sesi"
               variant="ghost"
-              className={`w-full h-9 text-[10px] font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/20 gap-2 rounded-xl transition-all ${
-                isCollapsed ? "md:justify-center md:px-0" : "justify-start"
-              }`}
+              className={`w-full h-9 text-[10px] font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/20 gap-2 rounded-xl transition-all ${isCollapsed ? "md:justify-center md:px-0" : "justify-start"
+                }`}
             >
               <LogOut className="h-3.5 w-3.5" />
               {!isCollapsed && <span className="animate-in fade-in duration-200">Keluar Sesi</span>}
@@ -244,11 +239,10 @@ export default function AdminLayout() {
                       key={item.to}
                       to={item.to}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${
-                        isActive
+                      className={`flex items-center gap-3 px-4.5 py-3 rounded-xl text-xs font-semibold transition-all duration-200 ${isActive
                           ? "bg-emerald-600 text-white shadow-md shadow-emerald-950/40"
                           : "text-emerald-100/50 hover:bg-white/5 hover:text-white"
-                      }`}
+                        }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       <span>{item.label}</span>
@@ -258,7 +252,7 @@ export default function AdminLayout() {
               </nav>
             </div>
 
-            <div className="border-t border-emerald-950/60 space-y-4 pt-4 bg-black/10">
+            <div className="border-t border-emerald-950/60 space-y-4 pt-4">
 
               <div className="flex flex-col gap-2 pt-1">
                 <Button
@@ -310,11 +304,10 @@ export default function AdminLayout() {
               <button
                 type="button"
                 onClick={() => setTheme("light")}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  theme === "light"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${theme === "light"
                     ? "bg-white dark:bg-slate-700 text-amber-500 shadow-sm"
                     : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                }`}
+                  }`}
                 title="Mode Terang"
               >
                 <Sun className="h-3.5 w-3.5" />
@@ -322,11 +315,10 @@ export default function AdminLayout() {
               <button
                 type="button"
                 onClick={() => setTheme("dark")}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  theme === "dark"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${theme === "dark"
                     ? "bg-white dark:bg-slate-700 text-emerald-500 shadow-sm"
                     : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                }`}
+                  }`}
                 title="Mode Gelap"
               >
                 <Moon className="h-3.5 w-3.5" />
@@ -334,11 +326,10 @@ export default function AdminLayout() {
               <button
                 type="button"
                 onClick={() => setTheme("system")}
-                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                  theme === "system"
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${theme === "system"
                     ? "bg-white dark:bg-slate-700 text-blue-500 shadow-sm"
                     : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                }`}
+                  }`}
                 title="Ikuti Sistem"
               >
                 <Laptop className="h-3.5 w-3.5" />

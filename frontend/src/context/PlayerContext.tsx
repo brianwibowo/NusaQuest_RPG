@@ -47,6 +47,8 @@ type PlayerAction =
   | { type: "GAIN_XP"; amount: number }
   | { type: "GAIN_POINTS"; amount: number }
   | { type: "SPEND_POINTS"; amount: number }
+  | { type: "GAIN_GOLD"; amount: number }
+  | { type: "SPEND_GOLD"; amount: number }
   | { type: "OBTAIN_BADGE"; badgeId: string }
   | { type: "OBTAIN_REWARD"; rewardId: string }
   | { type: "UNLOCK_STORY"; storyId: string }
@@ -100,6 +102,15 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
       return {
         ...state,
         totalPoints: Math.max(0, state.totalPoints - action.amount),
+      };
+
+    case "GAIN_GOLD":
+      return { ...state, gold: state.gold + action.amount };
+
+    case "SPEND_GOLD":
+      return {
+        ...state,
+        gold: Math.max(0, state.gold - action.amount),
       };
 
     case "OBTAIN_BADGE":
@@ -163,7 +174,7 @@ function loadState(): PlayerState {
 // ─── Provider ────────────────────────────────────────────────────
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [player, dispatch] = useReducer(playerReducer, null, loadState);
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [isPlayerLoading, setIsPlayerLoading] = useState(true);
   const hasLoadedFromDb = useRef(false);
 
@@ -224,6 +235,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           dispatch({
             type: "LOAD_STATE",
             payload: {
+              name: user?.name || "",
               selectedCharacterId: dbProfile.characterId,
               level: dbProfile.level,
               currentXp: dbProfile.currentXp,
@@ -238,6 +250,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
               hasCompletedOnboarding: true
             }
           });
+        } else {
+          // If no profile found (e.g. new user / 404), ensure the player's name is set from user profile
+          dispatch({
+            type: "LOAD_STATE",
+            payload: {
+              name: user?.name || ""
+            }
+          });
         }
       })
       .catch((err) => console.error("Failed to fetch progress from server:", err))
@@ -245,7 +265,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         hasLoadedFromDb.current = true;
         setIsPlayerLoading(false);
       });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   // Persist locally and sync changes to DB (only after initial DB load is done)
   useEffect(() => {

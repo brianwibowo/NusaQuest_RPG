@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { usePlayer } from "@/context/PlayerContext";
 import { getStories } from "@/services/storyService";
+import { getQuests } from "@/services/questService";
 import StoryCard from "@/components/game/StoryCard";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
-import type { Story } from "@/types";
+import type { Story, Quest } from "@/types";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 export default function StoryPage() {
@@ -14,12 +15,19 @@ export default function StoryPage() {
   const lang = player.language || "id";
 
   const [stories, setStories] = useState<Story[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsLoading(true);
-    getStories()
-      .then(setStories)
+    Promise.all([
+      getStories(),
+      getQuests()
+    ])
+      .then(([sList, qList]) => {
+        setStories(sList);
+        setQuests(qList);
+      })
       .catch(err => console.error(err))
       .finally(() => setIsLoading(false));
   }, []);
@@ -62,6 +70,7 @@ export default function StoryPage() {
             key={story.id}
             story={story}
             lang={lang}
+            quests={quests}
           />
         ))}
       </div>

@@ -56,11 +56,24 @@ export default function OnboardingPage() {
     }
   }, [user]);
 
+  // Auto-redirect returning users who have completed onboarding directly to lobby
+  useEffect(() => {
+    if (isAuthenticated && user && user.role === "user") {
+      if (player.hasCompletedOnboarding) {
+        navigate("/", { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, player.hasCompletedOnboarding]);
+
   // Google GSI button initialization
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "not_set";
     if (clientId !== "not_set" && googleLoaded && !isAuthenticated) {
       try {
+        // Calculate dynamic width: 380px on desktop/tablet, screen-fit on mobile
+        const screenWidth = window.innerWidth;
+        const dynamicWidth = screenWidth >= 640 ? 380 : Math.max(200, Math.min(280, screenWidth - 64));
+
         (window as any).google.accounts.id.initialize({
           client_id: clientId,
           callback: (response: any) => {
@@ -75,7 +88,7 @@ export default function OnboardingPage() {
         });
         (window as any).google.accounts.id.renderButton(
           document.getElementById("google-signin-btn"),
-          { theme: "outline", size: "large", width: 280 }
+          { theme: "outline", size: "large", width: dynamicWidth, shape: "pill" }
         );
       } catch (err) {
         console.error("GSI initialization error:", err);
@@ -225,22 +238,13 @@ export default function OnboardingPage() {
 
             {/* Actions */}
             <div className="flex flex-col gap-2 w-full max-w-sm pt-2">
-              <div className="flex gap-4 w-full">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep(1)}
-                  className="flex-1 h-11 text-xs font-bold text-slate-700 bg-white border-[#E5E0D5] rounded-full hover:bg-slate-50 cursor-pointer"
-                >
-                  {t("common.back")}
-                </Button>
-                <Button
-                  onClick={handleCompleteOnboarding}
-                  disabled={!selectedCharId}
-                  className="flex-1 h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md rounded-full hover:scale-[1.01] active:scale-95 transition-all uppercase tracking-wider cursor-pointer"
-                >
-                  {t("onboarding.start_adventure")}
-                </Button>
-              </div>
+              <Button
+                onClick={handleCompleteOnboarding}
+                disabled={!selectedCharId}
+                className="w-full h-11 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md rounded-full hover:scale-[1.01] active:scale-95 transition-all uppercase tracking-wider cursor-pointer"
+              >
+                {t("onboarding.start_adventure")}
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowGuide(true)}
@@ -332,7 +336,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* 2. CENTERED FLOATING GLASSMORPHIC CARD */}
-      <div className="w-full max-w-sm bg-white/90 backdrop-blur-md rounded-3xl border border-white/50 p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between gap-6 relative z-10 animate-fade-in">
+      <div className="w-full max-w-[92%] sm:max-w-md md:max-w-[460px] bg-white/90 backdrop-blur-md rounded-3xl border border-white/50 p-6 md:p-8 shadow-2xl flex flex-col items-center justify-between gap-6 relative z-10 animate-fade-in">
         
         {/* Top Header of Card */}
         <div className="flex flex-col items-center text-center space-y-4 w-full">
@@ -409,7 +413,7 @@ export default function OnboardingPage() {
               </div>
 
               {/* Google GSI button container */}
-              <div id="google-signin-btn" className="w-fit" />
+              <div id="google-signin-btn" className="w-full flex justify-center animate-pulse-slow" />
             </div>
           )}
 

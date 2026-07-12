@@ -39,7 +39,7 @@ import AdminProfile from "@/pages/admin/AdminProfile";
 // Guard: redirect to onboarding if not completed (waits for async loading)
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
   const { player, isPlayerLoading } = usePlayer();
-  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: isAuthLoading } = useAuth();
 
   // Wait for auth and player data to finish loading before deciding
   if (isAuthLoading || (isAuthenticated && isPlayerLoading)) {
@@ -55,6 +55,11 @@ function RequireOnboarding({ children }: { children: React.ReactNode }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/onboarding" replace />;
+  }
+
+  // Admins bypass onboarding check to allow testing/previewing the game lobby
+  if (isAdmin) {
+    return <>{children}</>;
   }
 
   if (!player.hasCompletedOnboarding) {

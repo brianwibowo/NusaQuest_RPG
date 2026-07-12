@@ -21,12 +21,12 @@ export default function XpBar({ currentXp, xpNeeded }: XpBarProps) {
   }, [currentXp, xpNeeded]);
 
   return (
-    <div className="w-full space-y-1">
-      <div className="flex justify-between text-xs text-muted-foreground font-medium">
+    <div className="w-full space-y-1.5">
+      <div className="flex justify-between text-[10px] text-slate-400 font-black uppercase tracking-wider">
         <span>XP: {currentXp} / {xpNeeded > 0 ? xpNeeded : "MAX"}</span>
-        <span>{xpNeeded > 0 ? `${progress}%` : "100%"}</span>
+        <span className="text-emerald-400">{xpNeeded > 0 ? `${progress}%` : "100%"}</span>
       </div>
-      <Progress value={progress} className="h-2 w-full bg-emerald-100" />
+      <Progress value={progress} className="h-2 w-full bg-slate-800/80 border border-slate-700/30" />
     </div>
   );
 }

@@ -20,4 +20,5 @@ export interface Umkm {
   rating: number;
   voucherAvailable: boolean;
   questIds: string[];
+  location?: any;
 }

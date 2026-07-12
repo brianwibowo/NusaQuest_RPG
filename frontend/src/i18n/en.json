@@ -3,7 +3,6 @@
     "name": "SinopiQuest",
     "tagline": "Play, Explore, Protect"
   },
-
   "nav": {
     "home": "Home",
     "explore": "Explore",
@@ -11,7 +10,6 @@
     "rewards": "Rewards",
     "profile": "Profile"
   },
-
   "onboarding": {
     "welcome": "Welcome, Explorer!",
     "intro": "You have been chosen to revive the forgotten Local Heritage Map. Explore destinations, complete missions, and unlock hidden stories of Nusantara.",
@@ -40,7 +38,6 @@
     "guide_footer": "* Character assets, rewards, stories, and UI will persist throughout your adventure.",
     "guide_close": "Got it & Close"
   },
-
   "home": {
     "greeting": "Hello, {{name}}!",
     "active_quests": "Active Quests",
@@ -52,10 +49,11 @@
     "explore_map": "Explore Map",
     "view_quests": "View Quests"
   },
-
   "quest": {
     "title": "Quests",
+    "subtitle": "Revive forgotten local heritage.",
     "all": "All",
+    "available": "Available",
     "start": "Start Quest",
     "continue": "Continue",
     "completed": "Completed",
@@ -74,7 +72,6 @@
     "xp_earned": "+{{amount}} XP",
     "points_earned": "+{{amount}} Points"
   },
-
   "battle": {
     "title": "Challenge",
     "question": "Question {{current}} of {{total}}",
@@ -88,7 +85,6 @@
     "next": "Next",
     "finish": "Finish"
   },
-
   "character": {
     "title": "Character",
     "level": "Level",
@@ -99,7 +95,6 @@
     "badges": "Badges",
     "no_badges": "No badges yet"
   },
-
   "reward": {
     "title": "Rewards",
     "badges": "Badges",
@@ -110,7 +105,6 @@
     "obtained": "Obtained",
     "cost": "{{amount}} Points"
   },
-
   "story": {
     "title": "Stories",
     "locked": "Complete the quest to unlock this story",
@@ -123,7 +117,6 @@
       "lingkungan": "Environment"
     }
   },
-
   "umkm": {
     "title": "Local UMKM",
     "products": "Products",
@@ -138,21 +131,18 @@
       "jasa": "Services"
     }
   },
-
   "map": {
     "title": "Explore Map",
     "filter": "Filter",
     "all_locations": "All Locations",
     "view_quests": "View Quests"
   },
-
   "leaderboard": {
     "title": "Leaderboard",
     "rank": "Rank",
     "player": "Player",
     "you": "You"
   },
-
   "profile": {
     "title": "Profile",
     "journey_history": "Journey History",
@@ -162,7 +152,6 @@
     "reset_confirm": "Are you sure you want to reset all progress?",
     "language": "Language"
   },
-
   "common": {
     "back": "Back",
     "cancel": "Cancel",

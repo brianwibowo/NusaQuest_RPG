@@ -15,13 +15,11 @@ export default function CharacterPage() {
   const { player } = usePlayer();
   const lang = player.language || "id";
 
-  const character = CHARACTERS.find((c) => c.id === player.selectedCharacterId);
+  const character = CHARACTERS.find((c) => c.id === player.selectedCharacterId) || CHARACTERS[0];
   const xpNeeded = getXpForNextLevel(player.level);
 
   // Filter rewards of type "badge"
   const allBadges = REWARDS.filter((r) => r.type === "badge");
-
-  if (!character) return null;
 
   return (
     <div className="space-y-4">

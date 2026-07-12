@@ -6,7 +6,8 @@ export function mapLocation(loc: any) {
     description: { id: loc.descId, en: loc.descEn },
     address: loc.addressId ? { id: loc.addressId, en: loc.addressEn } : null,
     questIds: loc.quests?.map((q: any) => q.id) || [],
-    umkmIds: loc.umkms?.map((u: any) => u.id) || []
+    umkmIds: loc.umkms?.map((u: any) => u.id) || [],
+    umkms: loc.umkms?.map(mapUmkm) || []
   };
 }
 
@@ -47,7 +48,8 @@ export function mapStory(s: any) {
   return {
     ...s,
     title: { id: s.titleId, en: s.titleEn },
-    content: { id: s.contentId, en: s.contentEn }
+    content: { id: s.contentId, en: s.contentEn },
+    location: mapLocation(s.location)
   };
 }
 
