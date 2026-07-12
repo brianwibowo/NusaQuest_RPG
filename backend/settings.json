@@ -1,0 +1,16 @@
+{
+  "dailySignIn": [
+    { "day": 1, "gold": 10, "points": 0 },
+    { "day": 2, "gold": 20, "points": 0 },
+    { "day": 3, "gold": 30, "points": 0 },
+    { "day": 4, "gold": 0, "points": 15 },
+    { "day": 5, "gold": 50, "points": 0 },
+    { "day": 6, "gold": 0, "points": 25 },
+    { "day": 7, "gold": 100, "points": 50 }
+  ],
+  "dailyQuests": {
+    "quiz": { "xp": 10, "gold": 20, "points": 10 },
+    "explore": { "xp": 10, "gold": 10, "points": 5 },
+    "leaderboard": { "xp": 15, "gold": 15, "points": 10 }
+  }
+}

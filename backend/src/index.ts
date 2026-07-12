@@ -24,6 +24,7 @@ import songRoutes from "./routes/songs";
 import progressRoutes from "./routes/progress";
 import leaderboardRoutes from "./routes/leaderboard";
 import uploadRoutes from "./routes/uploads";
+import settingsRoutes from "./routes/settings";
 
 const app = new Hono();
 
@@ -57,6 +58,7 @@ app.route("/api/songs", songRoutes);
 app.route("/api/progress", progressRoutes);
 app.route("/api/leaderboard", leaderboardRoutes);
 app.route("/api/uploads", uploadRoutes);
+app.route("/api/settings", settingsRoutes);
 
 const port = Number(process.env.PORT) || 3001;
 serve({ fetch: app.fetch, port }, () => {

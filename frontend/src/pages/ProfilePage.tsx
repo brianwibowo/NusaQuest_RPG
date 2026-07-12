@@ -5,12 +5,12 @@ import { QUESTS } from "@/data/quests";
 import { REWARDS } from "@/data/rewards";
 import { getLevelProgress, getXpForCurrentLevel, getXpForNextLevel } from "@/lib/xp";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LanguageToggle from "@/components/common/LanguageToggle";
-import { Award, LogOut, Shield, Settings, Trash2 } from "lucide-react";
+import { Award, LogOut, Shield, Settings, Trash2, Compass, ChevronRight, BookOpen, ShoppingBag, Trophy } from "lucide-react";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
@@ -62,7 +62,7 @@ export default function ProfilePage() {
               {player.name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          
+
           <div className="space-y-1 min-w-0">
             <h2 className="text-base font-black leading-snug truncate">{player.name}</h2>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -84,8 +84,8 @@ export default function ProfilePage() {
             <span className="text-emerald-400 font-extrabold">{relativeCurrent} / {relativeNeeded} XP ({progressPercent}%)</span>
           </div>
           <div className="h-2 w-full bg-slate-800/80 rounded-full overflow-hidden border border-slate-700/50 shadow-inner">
-            <div 
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500" 
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -121,20 +121,18 @@ export default function ProfilePage() {
               const isUnlocked = player.obtainedBadgeIds.includes(badge.id);
               return (
                 <div key={badge.id} className="flex flex-col items-center text-center space-y-1.5">
-                  <div className={`h-12 w-12 rounded-full flex items-center justify-center border shadow-inner relative transition-transform duration-300 ${
-                    isUnlocked 
-                      ? "bg-amber-50/50 border-amber-200" 
+                  <div className={`h-12 w-12 rounded-full flex items-center justify-center border shadow-inner relative transition-transform duration-300 ${isUnlocked
+                      ? "bg-amber-50/50 border-amber-200"
                       : "bg-slate-50 border-slate-100 opacity-30 grayscale"
-                  }`}>
+                    }`}>
                     {badge.imageUrl ? (
                       <img src={badge.imageUrl} alt={badge.name[lang]} className="h-7 w-7 object-contain" />
                     ) : (
                       <span className="text-lg">🏅</span>
                     )}
                   </div>
-                  <span className={`text-[9px] font-extrabold leading-tight line-clamp-2 px-0.5 ${
-                    isUnlocked ? "text-slate-800" : "text-slate-400"
-                  }`}>
+                  <span className={`text-[9px] font-extrabold leading-tight line-clamp-2 px-0.5 ${isUnlocked ? "text-slate-800" : "text-slate-400"
+                    }`}>
                     {badge.name[lang]}
                   </span>
                 </div>
@@ -174,7 +172,52 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* 4. App Settings List */}
+      {/* 4. Adventure Features Navigation Menu */}
+      <Card className="border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+            <Compass className="h-4 w-4 text-emerald-600 animate-spin-slow" />
+            <span>{lang === "id" ? "Menu Petualangan" : "Adventure Menu"}</span>
+          </h3>
+
+          <div className="divide-y divide-slate-50">
+            <Link
+              to="/story"
+              className="flex items-center justify-between py-3 hover:bg-slate-50/50 transition-colors cursor-pointer group rounded-xl px-2 -mx-2 font-bold"
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+                <span className="text-xs text-slate-700">{t("story.title")}</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+
+            <Link
+              to="/umkm"
+              className="flex items-center justify-between py-3 hover:bg-slate-50/50 transition-colors cursor-pointer group rounded-xl px-2 -mx-2 font-bold"
+            >
+              <div className="flex items-center gap-3">
+                <ShoppingBag className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+                <span className="text-xs text-slate-700">{t("umkm.title")}</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+
+            <Link
+              to="/leaderboard"
+              className="flex items-center justify-between py-3 hover:bg-slate-50/50 transition-colors cursor-pointer group rounded-xl px-2 -mx-2 font-bold"
+            >
+              <div className="flex items-center gap-3">
+                <Trophy className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors" />
+                <span className="text-xs text-slate-700">{t("leaderboard.title")}</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 5. App Settings List */}
       <Card className="border-slate-100 bg-white shadow-sm rounded-2xl overflow-hidden">
         <CardContent className="p-4 space-y-4">
           <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">

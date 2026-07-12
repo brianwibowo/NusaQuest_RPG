@@ -10,6 +10,7 @@ import {
   Store,
   Music,
   Users,
+  Settings,
   ArrowLeft,
   LogOut,
   ChevronLeft,
@@ -90,6 +91,7 @@ export default function AdminLayout() {
     { to: "/admin/umkm", label: "UMKM Lokal", icon: Store },
     { to: "/admin/songs", label: "Lagu BGM", icon: Music },
     { to: "/admin/users", label: "Pengguna", icon: Users },
+    { to: "/admin/settings", label: "Pengaturan Game", icon: Settings },
   ];
 
   const getPageTitle = () => {
@@ -108,6 +110,8 @@ export default function AdminLayout() {
         return "Lagu BGM";
       case "/admin/users":
         return "Pengguna";
+      case "/admin/settings":
+        return "Pengaturan Game";
       case "/admin/profile":
         return "Ubah Profil Admin";
       default:

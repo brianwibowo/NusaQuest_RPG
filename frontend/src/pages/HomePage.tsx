@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Map, Swords, Sparkles, MapPin, CheckCircle2, ChevronRight, HelpCircle, Coins, CalendarCheck, Calendar } from "lucide-react";
+import { Map, Swords, Sparkles, MapPin, CheckCircle2, ChevronRight, HelpCircle, Coins, CalendarCheck, Calendar, BookOpen, ShoppingBag, Trophy } from "lucide-react";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import { audioManager } from "@/lib/audio";
 import { hapticsManager } from "@/lib/haptics";
@@ -384,6 +384,31 @@ export default function HomePage() {
             {t("home.view_quests")}
           </Link>
         </Button>
+      </div>
+
+      {/* 3b. Secondary Quick Actions (Cerita, UMKM, Peringkat) */}
+      <div className="grid grid-cols-3 gap-2">
+        <Link
+          to="/story"
+          className="flex flex-col items-center justify-center p-2.5 bg-white border border-slate-100 hover:border-emerald-100 rounded-xl shadow-sm hover:shadow transition-all duration-300 cursor-pointer active:scale-95 text-center group font-bold"
+        >
+          <BookOpen className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors mb-1" />
+          <span className="text-[9px] text-slate-700">{t("story.title")}</span>
+        </Link>
+        <Link
+          to="/umkm"
+          className="flex flex-col items-center justify-center p-2.5 bg-white border border-slate-100 hover:border-emerald-100 rounded-xl shadow-sm hover:shadow transition-all duration-300 cursor-pointer active:scale-95 text-center group font-bold"
+        >
+          <ShoppingBag className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors mb-1" />
+          <span className="text-[9px] text-slate-700">{t("umkm.title")}</span>
+        </Link>
+        <Link
+          to="/leaderboard"
+          className="flex flex-col items-center justify-center p-2.5 bg-white border border-slate-100 hover:border-emerald-100 rounded-xl shadow-sm hover:shadow transition-all duration-300 cursor-pointer active:scale-95 text-center group font-bold"
+        >
+          <Trophy className="h-4.5 w-4.5 text-slate-500 group-hover:text-emerald-600 transition-colors mb-1" />
+          <span className="text-[9px] text-slate-700">{t("leaderboard.title")}</span>
+        </Link>
       </div>
 
       {/* Daily Quests Board (Papan Misi Harian) */}
