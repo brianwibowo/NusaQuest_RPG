@@ -1,4 +1,5 @@
 import { usePlayer } from "@/context/PlayerContext";
+import { useAuth } from "@/context/AuthContext";
 import { CHARACTERS } from "@/data/characters";
 import { QUESTS } from "@/data/quests";
 import { useTranslation } from "react-i18next";
@@ -7,20 +8,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LanguageToggle from "@/components/common/LanguageToggle";
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogTrigger, DialogClose } from "@/components/ui/dialog";
-import { User, Award, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
+import { User, Award, LogOut, CheckCircle2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { player, dispatch } = usePlayer();
+  const { player } = usePlayer();
+  const { isAuthenticated, signOut } = useAuth();
   const lang = player.language || "id";
 
   const character = CHARACTERS.find((c) => c.id === player.selectedCharacterId);
 
-  const handleResetGame = () => {
-    dispatch({ type: "RESET_GAME" });
-    navigate("/onboarding");
+  const handleLogout = () => {
+    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+      signOut();
+      navigate("/onboarding");
+    }
   };
 
   if (!character) return null;
@@ -61,41 +64,17 @@ export default function ProfilePage() {
             <LanguageToggle />
           </div>
 
-          {/* Reset Game Dialog Trigger */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full flex items-center justify-between px-0 py-2 h-auto text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-transparent"
-              >
-                <span>{t("profile.reset_game")}</span>
-                <LogOut className="h-4 w-4 text-rose-500" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-xs p-5 rounded-2xl border-slate-100 flex flex-col items-center gap-3 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 border border-rose-100 text-rose-600">
-                <ShieldAlert className="h-5 w-5" />
-              </div>
-              <DialogTitle className="text-sm font-bold text-slate-800">{t("profile.reset_game")}</DialogTitle>
-              <DialogDescription className="text-xs text-slate-500 leading-relaxed font-medium">
-                {t("profile.reset_confirm")} Progres level, poin, dan koleksi reward kamu akan terhapus secara permanen.
-              </DialogDescription>
-              <div className="flex gap-2.5 w-full pt-1.5">
-                <DialogClose asChild>
-                  <Button variant="outline" size="sm" className="flex-1 text-xs">
-                    {t("common.cancel")}
-                  </Button>
-                </DialogClose>
-                <Button
-                  size="sm"
-                  onClick={handleResetGame}
-                  className="flex-1 text-xs bg-rose-600 hover:bg-rose-700 text-white"
-                >
-                  {t("common.confirm")}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          {/* Logout Button */}
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-between px-0 py-2 h-auto text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-transparent cursor-pointer"
+            >
+              <span>{t("onboarding.logout") || "Keluar"}</span>
+              <LogOut className="h-4 w-4 text-rose-500" />
+            </Button>
+          )}
         </CardContent>
       </Card>
 

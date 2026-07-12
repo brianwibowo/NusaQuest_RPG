@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, X, PlusCircle, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Loader2, X, PlusCircle, ChevronLeft, ChevronRight, Check, ArrowUp, ArrowDown, Compass } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "./FieldGroup";
 import type {
@@ -36,15 +36,12 @@ export default function QuestFormDialog({
   // ── Form Fields ──
   const [questId, setQuestId] = useState("");
   const [titleId, setTitleId] = useState("");
-  const [titleEn, setTitleEn] = useState("");
   const [descId, setDescId] = useState("");
-  const [descEn, setDescEn] = useState("");
   const [type, setType] = useState("main");
   const [difficulty, setDifficulty] = useState("easy");
   const [requiredLevel, setRequiredLevel] = useState("1");
   const [availableLevels, setAvailableLevels] = useState<number[]>([1]);
   const [estimatedTimeId, setEstimatedTimeId] = useState("");
-  const [estimatedTimeEn, setEstimatedTimeEn] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [locationId, setLocationId] = useState("");
   const [relatedUmkmId, setRelatedUmkmId] = useState("");
@@ -58,8 +55,15 @@ export default function QuestFormDialog({
   const [rewardCollectible, setRewardCollectible] = useState("");
   const [rewardStory, setRewardStory] = useState("");
 
+  const [isDirty, setIsDirty] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
+
   // Reset form when dialog opens
   const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && isDirty) {
+      const confirmClose = window.confirm("Ada perubahan yang belum disimpan. Yakin ingin keluar?");
+      if (!confirmClose) return;
+    }
     if (nextOpen && !editingItem) {
       resetForm();
     }
@@ -71,28 +75,24 @@ export default function QuestFormDialog({
     setWasValidated(false);
     setQuestId("");
     setTitleId("");
-    setTitleEn("");
     setDescId("");
-    setDescEn("");
     setType("main");
     setDifficulty("easy");
     setRequiredLevel("1");
     setAvailableLevels([1]);
-    setEstimatedTimeId("");
-    setEstimatedTimeEn("");
+    setEstimatedTimeId("30");
     setImageUrl("");
     setLocationId(locations[0]?.id || "");
     setRelatedUmkmId("");
     setBattleId("");
-    setObjectives([
-      { descId: "Kunjungi lokasi destinasi wisata", descEn: "Visit the tourism destination", type: "visit_location", sortOrder: 0 }
-    ]);
+    setObjectives([]);
     setRewardXp("100");
     setRewardPoints("50");
     setRewardBadge("");
     setRewardVoucher("");
     setRewardCollectible("");
     setRewardStory("");
+    setIsDirty(false);
   };
 
   // Populate form from editing item
@@ -101,15 +101,12 @@ export default function QuestFormDialog({
     setWasValidated(false);
     setQuestId(fullQuest.id);
     setTitleId(fullQuest.titleId);
-    setTitleEn(fullQuest.titleEn);
     setDescId(fullQuest.descId);
-    setDescEn(fullQuest.descEn);
     setType(fullQuest.type);
     setDifficulty(fullQuest.difficulty);
     setRequiredLevel(fullQuest.requiredLevel.toString());
     setAvailableLevels(fullQuest.availableLevels || [1]);
-    setEstimatedTimeId(fullQuest.estimatedTimeId || "");
-    setEstimatedTimeEn(fullQuest.estimatedTimeEn || "");
+    setEstimatedTimeId(fullQuest.estimatedTimeId ? (parseInt(fullQuest.estimatedTimeId) || 30).toString() : "30");
     setImageUrl(fullQuest.imageUrl || "");
     setLocationId(fullQuest.locationId);
     setRelatedUmkmId(fullQuest.relatedUmkmId || "");
@@ -122,22 +119,146 @@ export default function QuestFormDialog({
     setRewardVoucher(r?.voucherId || "");
     setRewardCollectible(r?.collectibleId || "");
     setRewardStory(r?.storyUnlockId || "");
+    setIsDirty(false);
   };
 
-  // Expose populateForm via effect
-  useState(() => {
-    if (editingItem) populateForm(editingItem);
-    else resetForm();
-  });
+  // Synchronize editing item status
+  useEffect(() => {
+    if (open) {
+      if (editingItem) {
+        populateForm(editingItem);
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, editingItem]);
+
+  // Step validation check utility
+  const validateStep = (step: number): boolean => {
+    if (step === 1) {
+      if (!questId.trim()) {
+        toast.error("ID Misi belum terisi — silakan isi judul misi terlebih dahulu.");
+        return false;
+      }
+      if (!titleId.trim()) {
+        toast.error("Judul Misi wajib diisi!");
+        return false;
+      }
+      if (!locationId) {
+        toast.error("Destinasi Wisata wajib dipilih!");
+        return false;
+      }
+      if (!requiredLevel) {
+        toast.error("Syarat Minimum Level wajib dipilih!");
+        return false;
+      }
+      if (!descId.trim()) {
+        toast.error("Deskripsi Cerita Misi wajib diisi!");
+        return false;
+      }
+    }
+    if (step === 2) {
+      if (!availableLevels.length) {
+        toast.error("Pilih minimal satu level yang bisa mengakses misi ini!");
+        return false;
+      }
+      if (!objectives.length) {
+        toast.error("Tambahkan minimal satu tugas untuk misi ini!");
+        return false;
+      }
+      if (objectives.some(obj => !obj.descId.trim())) {
+        toast.error("Ada tugas yang belum diisi deskripsinya — lengkapi semua tugas.");
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Stepper Header validation wrapper
+  const handleStepClick = (targetStep: number) => {
+    setWasValidated(true);
+    if (targetStep > 1 && !validateStep(1)) return;
+    if (targetStep > 2 && !validateStep(2)) return;
+    setFormStep(targetStep);
+  };
+
+  // Next Step validation wrapper
+  const handleNextStep = () => {
+    setWasValidated(true);
+    if (formStep === 1) {
+      if (validateStep(1)) {
+        setFormStep(2);
+      }
+    } else if (formStep === 2) {
+      if (validateStep(2)) {
+        setFormStep(3);
+      }
+    }
+  };
+
+  // Levels toggle selectors
+  const handleSelectAllLevels = () => {
+    setAvailableLevels([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    setIsDirty(true);
+  };
+
+  const handleClearAllLevels = () => {
+    setAvailableLevels([]);
+    setIsDirty(true);
+  };
+
+  // Objectives list reordering
+  const handleMoveObjective = (index: number, direction: "up" | "down") => {
+    if (direction === "up" && index === 0) return;
+    if (direction === "down" && index === objectives.length - 1) return;
+
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    const updated = [...objectives];
+    
+    // Swap elements
+    const temp = updated[index];
+    updated[index] = updated[targetIndex];
+    updated[targetIndex] = temp;
+
+    // Map new sortOrder
+    const finalObjectives = updated.map((obj, i) => ({ ...obj, sortOrder: i }));
+    setObjectives(finalObjectives);
+    setIsDirty(true);
+  };
 
   // ── Handlers ──
 
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+    if (file.size > MAX_SIZE) {
+      toast.error("Ukuran berkas terlalu besar! Maksimal ukuran gambar adalah 2 MB.");
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
+
+    let fileToUpload = file;
+    const isHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+    if (isHeic) {
+      toast.info("Mengonversi berkas HEIC/HEIF ke JPEG...");
+      try {
+        const { convertHeicToJpeg } = await import("@/lib/imageHelper");
+        fileToUpload = await convertHeicToJpeg(file);
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal mengonversi gambar HEIC. Harap gunakan format JPG/PNG.");
+        setUploading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     formData.append("entity", "quests");
     const token = localStorage.getItem("sinopiquest_token");
     try {
@@ -158,20 +279,24 @@ export default function QuestFormDialog({
   };
 
   const handleAddObjective = () => {
-    setObjectives([...objectives, { descId: "", descEn: "", type: "visit_location", sortOrder: objectives.length }]);
+    setObjectives([...objectives, { descId: "", type: "visit_location", sortOrder: objectives.length }]);
+    setIsDirty(true);
   };
 
   const handleRemoveObjective = (index: number) => {
     setObjectives(objectives.filter((_, idx) => idx !== index));
+    setIsDirty(true);
   };
 
   const handleObjectiveChange = (index: number, field: keyof QuestObjective, value: string) => {
     const updated = [...objectives];
     updated[index] = { ...updated[index], [field]: value };
     setObjectives(updated);
+    setIsDirty(true);
   };
 
   const handleLevelCheckbox = (lvl: number, checked: boolean) => {
+    setIsDirty(true);
     if (checked) {
       setAvailableLevels([...availableLevels, lvl].sort((a, b) => a - b));
     } else {
@@ -184,8 +309,8 @@ export default function QuestFormDialog({
     setWasValidated(true);
 
     if (formStep === 1) {
-      if (!questId.trim() || !titleId.trim() || !titleEn.trim() || !descId.trim() || !descEn.trim() || !locationId) {
-        toast.error("Harap lengkapi semua kolom identitas wajib di Langkah 1!");
+      if (!questId.trim() || !titleId.trim() || !descId.trim() || !locationId) {
+        toast.error("Lengkapi semua kolom bertanda bintang (*) sebelum melanjutkan.");
         return;
       }
       setFormStep(2);
@@ -193,12 +318,16 @@ export default function QuestFormDialog({
     }
 
     if (formStep === 2) {
-      if (!objectives.length) {
-        toast.error("Harap tambahkan minimal satu tugas objektif!");
+      if (!availableLevels.length) {
+        toast.error("Pilih minimal satu level yang bisa mengakses misi ini!");
         return;
       }
-      if (objectives.some(obj => !obj.descId.trim() || !obj.descEn.trim())) {
-        toast.error("Harap lengkapi deskripsi tugas objektif Anda!");
+      if (!objectives.length) {
+        toast.error("Tambahkan minimal satu tugas untuk misi ini!");
+        return;
+      }
+      if (objectives.some(obj => !obj.descId.trim())) {
+        toast.error("Ada tugas yang belum diisi deskripsinya — lengkapi semua tugas.");
         return;
       }
       setFormStep(3);
@@ -206,15 +335,17 @@ export default function QuestFormDialog({
     }
 
     if (!availableLevels.length) {
-      toast.error("Harap pilih minimal satu tingkat level!");
+      toast.error("Pilih minimal satu level yang bisa mengakses misi ini!");
       return;
     }
     const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       id: questId || undefined,
-      titleId, titleEn, descId, descEn, type, difficulty,
+      titleId, descId, type, difficulty,
       requiredLevel: parseInt(requiredLevel) || 1,
-      availableLevels, estimatedTimeId, estimatedTimeEn, imageUrl, locationId,
+      availableLevels,
+      estimatedTimeId: estimatedTimeId ? `${estimatedTimeId} menit` : "",
+      imageUrl, locationId,
       relatedUmkmId: relatedUmkmId || null,
       battleId: battleId || null,
       objectives: objectives.map((obj, index) => ({ ...obj, sortOrder: index })),
@@ -267,7 +398,7 @@ export default function QuestFormDialog({
               <div key={s.num} className="flex items-center flex-1">
                 <button
                   type="button"
-                  onClick={() => setFormStep(s.num)}
+                  onClick={() => handleStepClick(s.num)}
                   className={`flex items-center gap-2 transition-all ${
                     formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
                   }`}
@@ -302,63 +433,54 @@ export default function QuestFormDialog({
           {/* ═══ STEP 1: Informasi Dasar ═══ */}
           {formStep === 1 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Isi identitas dan detail utama misi petualangan.</p>
+              <p className="text-xs text-slate-400 font-normal">Tentukan identitas, kategori, dan deskripsi petualangan misi.</p>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FieldGroup label="Kode Unik Misi" hint="Huruf kecil, tanpa spasi">
-                  <Input value={questId} onChange={(e) => setQuestId(e.target.value)} placeholder="contoh: quest_eco_mangrove" disabled={!!editingItem} className={`${inputClass} ${wasValidated && !questId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
-                </FieldGroup>
-                <FieldGroup label="Judul Misi (Indonesia)">
-                  <Input value={titleId} onChange={(e) => setTitleId(e.target.value)} placeholder="contoh: Tanam Bakau Pesisir" required className={`${inputClass} ${wasValidated && !titleId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
-                </FieldGroup>
-                <FieldGroup label="Judul Misi (Inggris)">
-                  <Input value={titleEn} onChange={(e) => setTitleEn(e.target.value)} placeholder="contoh: Plant Coastal Mangrove" required className={`${inputClass} ${wasValidated && !titleEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
-                </FieldGroup>
+              {/* ── Identitas Misi ── */}
+              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 space-y-4">
+                <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">🏷️ Identitas Misi</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Judul Misi" hint="Nama misi yang tampil di aplikasi penjelajah" required>
+                    <Input value={titleId} onChange={(e) => {
+                      const raw = e.target.value;
+                      const formattedVal = raw.length === 1 ? raw.toUpperCase() : raw.charAt(0).toUpperCase() + raw.slice(1);
+                      setTitleId(formattedVal);
+                      setIsDirty(true);
+                      // Auto-generate ID from title if not editing
+                      if (!editingItem) {
+                        const autoId = formattedVal.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim().replace(/\s+/g, "_");
+                        setQuestId(autoId ? `misi_${autoId}` : "");
+                      }
+                    }} placeholder="contoh: Tanam bakau pesisir" required className={`${inputClass} ${wasValidated && !titleId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} />
+                  </FieldGroup>
+                  <FieldGroup label="ID Misi" hint="Terisi otomatis dari judul — bisa diubah manual jika perlu" required>
+                    <Input value={questId} onChange={(e) => { setQuestId(e.target.value); setIsDirty(true); }} placeholder="terisi otomatis..." disabled={!!editingItem} className={`${inputClass} font-mono text-xs ${wasValidated && !questId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""} ${!editingItem ? "bg-slate-50" : ""}`} />
+                  </FieldGroup>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FieldGroup label="Tipe Misi">
-                  <select value={type} onChange={(e) => setType(e.target.value)} className={selectClass}>
+              {/* ── Pengaturan Misi ── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FieldGroup label="Kategori Misi" hint="Rumpun atau jenis petualangan misi">
+                  <select value={type} onChange={(e) => { setType(e.target.value); setIsDirty(true); }} className={selectClass}>
                     {QUEST_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </FieldGroup>
-                <FieldGroup label="Tingkat Kesulitan">
-                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={selectClass}>
+                <FieldGroup label="Tingkat Kesulitan" hint="Seberapa berat tantangan misi bagi pemain">
+                  <select value={difficulty} onChange={(e) => { setDifficulty(e.target.value); setIsDirty(true); }} className={selectClass}>
                     {DIFFICULTIES.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
                   </select>
-                </FieldGroup>
-                <FieldGroup label="Lokasi Terkait">
-                  <select value={locationId} onChange={(e) => setLocationId(e.target.value)} required className={`${selectClass} ${wasValidated && !locationId ? "border-red-500" : ""}`}>
-                    <option value="">Pilih lokasi...</option>
-                    {locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.nameId}</option>)}
-                  </select>
-                </FieldGroup>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <FieldGroup label="Level Minimum">
-                  <Input type="number" min="1" max="10" value={requiredLevel} onChange={(e) => setRequiredLevel(e.target.value)} required className={inputClass} />
-                </FieldGroup>
-                <FieldGroup label="Perkiraan Waktu (Indonesia)" hint="opsional">
-                  <Input value={estimatedTimeId} onChange={(e) => setEstimatedTimeId(e.target.value)} placeholder="contoh: 30 menit" className={inputClass} />
-                </FieldGroup>
-                <FieldGroup label="Perkiraan Waktu (Inggris)" hint="opsional">
-                  <Input value={estimatedTimeEn} onChange={(e) => setEstimatedTimeEn(e.target.value)} placeholder="contoh: 30 minutes" className={inputClass} />
                 </FieldGroup>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldGroup label="Gambar Misi" hint="Upload gambar ilustrasi misi">
-                  <div className="relative">
-                    <Input type="file" accept="image/*" onChange={handleUploadImage} disabled={uploading}
-                      className="h-10 text-sm border-slate-200 bg-white text-slate-800 font-normal rounded-xl file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700"
-                    />
-                    {uploading && <Loader2 className="absolute right-3 top-3 h-4 w-4 text-emerald-500 animate-spin" />}
-                  </div>
-                  {imageUrl && <img src={imageUrl} alt="Preview" className="mt-2 h-24 w-full object-cover rounded-xl border border-slate-200" />}
+                <FieldGroup label="Destinasi Wisata" hint="Lokasi utama tempat misi ini berlangsung" required>
+                  <select value={locationId} onChange={(e) => { setLocationId(e.target.value); setIsDirty(true); }} required className={`${selectClass} ${wasValidated && !locationId ? "border-red-500" : ""}`}>
+                    <option value="">Pilih lokasi destinasi...</option>
+                    {locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.nameId}</option>)}
+                  </select>
                 </FieldGroup>
-                <FieldGroup label="UMKM Mitra" hint="opsional — hubungkan dengan produk lokal">
-                  <select value={relatedUmkmId} onChange={(e) => setRelatedUmkmId(e.target.value)} className={selectClass}>
+                <FieldGroup label="UMKM Mitra Terkait" hint="Hubungkan jika misi ini melibatkan belanja/kunjungan UMKM">
+                  <select value={relatedUmkmId} onChange={(e) => { setRelatedUmkmId(e.target.value); setIsDirty(true); }} className={selectClass}>
                     <option value="">Tanpa UMKM</option>
                     {umkms.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
@@ -366,25 +488,98 @@ export default function QuestFormDialog({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldGroup label="Deskripsi (Indonesia)">
-                  <textarea value={descId} onChange={(e) => setDescId(e.target.value)} placeholder="Tuliskan deskripsi singkat misi..." required rows={4} className={`${textareaClass} ${wasValidated && !descId.trim() ? "border-red-500" : ""}`} />
+                <FieldGroup label="Syarat Minimum Level" hint="Level karakter minimal agar pemain bisa menerima misi ini" required>
+                  <select value={requiredLevel} onChange={(e) => { setRequiredLevel(e.target.value); setIsDirty(true); }} className={selectClass}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lvl) => (
+                      <option key={lvl} value={lvl.toString()}>Level {lvl}</option>
+                    ))}
+                  </select>
                 </FieldGroup>
-                <FieldGroup label="Deskripsi (Inggris)">
-                  <textarea value={descEn} onChange={(e) => setDescEn(e.target.value)} placeholder="Write a brief quest description..." required rows={4} className={`${textareaClass} ${wasValidated && !descEn.trim() ? "border-red-500" : ""}`} />
+                <FieldGroup label="Estimasi Durasi" hint="Perkiraan waktu penyelesaian misi dalam satuan menit" required>
+                  <div className="relative flex items-center">
+                    <Input type="number" min="1" value={estimatedTimeId} onChange={(e) => { setEstimatedTimeId(e.target.value); setIsDirty(true); }} placeholder="contoh: 30" required className={`${inputClass} pr-16 w-full`} />
+                    <span className="absolute right-3.5 text-xs font-semibold text-slate-400 select-none">menit</span>
+                  </div>
                 </FieldGroup>
               </div>
+
+              {/* ── Foto Sampul (Full Width) ── */}
+              <FieldGroup label="Foto Sampul Misi" hint="Unggah gambar ilustrasi misi (format: JPG, PNG, HEIC)">
+                <div className="relative">
+                  <Input type="file" accept="image/*" onChange={(e) => { handleUploadImage(e); setIsDirty(true); }} disabled={uploading}
+                    className="h-10 text-sm border-slate-200 bg-white text-slate-800 font-normal rounded-xl file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700"
+                  />
+                  {uploading && <Loader2 className="absolute right-3 top-3 h-4 w-4 text-emerald-500 animate-spin" />}
+                </div>
+                {imageUrl && (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 w-full group mt-2">
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
+                      className="h-40 w-full object-cover select-none cursor-zoom-in hover:opacity-90 transition-opacity"
+                      onClick={() => setPreviewImageUrl(imageUrl)}
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200 pointer-events-none">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewImageUrl(imageUrl);
+                        }}
+                        className="h-8 px-3 text-[10px] font-bold bg-white/95 text-slate-800 hover:bg-white rounded-lg shadow-sm cursor-pointer pointer-events-auto"
+                      >
+                        Lihat Penuh 🔍
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setImageUrl("");
+                          setIsDirty(true);
+                        }}
+                        className="h-8 px-3 text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-sm cursor-pointer pointer-events-auto"
+                      >
+                        Hapus Foto
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </FieldGroup>
+
+              {/* ── Deskripsi (Full Width) ── */}
+              <FieldGroup label="Deskripsi Cerita Misi" hint="Tuliskan kisah pengantar petualangan atau panduan umum misi ini" required>
+                <textarea value={descId} onChange={(e) => { setDescId(e.target.value); setIsDirty(true); }} placeholder="Tuliskan latar belakang petualangan atau petunjuk bagi pemain..." required rows={4} className={`${textareaClass} ${wasValidated && !descId.trim() ? "border-red-500" : ""}`} />
+              </FieldGroup>
             </div>
           )}
 
           {/* ═══ STEP 2: Target & Level ═══ */}
           {formStep === 2 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Tentukan di level berapa misi tersedia, dan apa saja tugas yang harus diselesaikan pemain.</p>
+              <p className="text-xs text-slate-400 font-normal">Tentukan siapa yang bisa bermain misi ini dan apa saja tugas yang harus diselesaikan.</p>
 
               {/* Level Checkboxes */}
               <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-3">
-                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Tersedia pada Level</h3>
-                <p className="text-[11px] text-slate-400 font-normal">Centang level pemain yang bisa mengakses misi ini.</p>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Level yang Bisa Bermain</h3>
+                    <p className="text-[11px] text-slate-400 font-normal mt-0.5">Centang level pemain yang diizinkan mengambil misi ini.</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button type="button" onClick={handleSelectAllLevels}
+                      className="h-7 px-2 text-[10px] font-bold bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 rounded-lg shadow-sm cursor-pointer"
+                    >
+                      Pilih Semua
+                    </Button>
+                    <Button type="button" onClick={handleClearAllLevels}
+                      className="h-7 px-2 text-[10px] font-bold bg-white hover:bg-slate-50 text-red-600 border border-slate-200 rounded-lg shadow-sm cursor-pointer"
+                    >
+                      Hapus Semua
+                    </Button>
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-3">
                   {[1,2,3,4,5,6,7,8,9,10].map((lvl) => (
                     <label key={lvl} className="flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-slate-200 hover:border-emerald-300 transition-colors">
@@ -393,7 +588,7 @@ export default function QuestFormDialog({
                         onCheckedChange={(checked) => handleLevelCheckbox(lvl, !!checked)}
                         className="border-slate-300 bg-white data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                       />
-                      <span className="text-slate-700 text-xs font-normal">Lvl {lvl}</span>
+                      <span className="text-slate-700 text-xs font-normal">Level {lvl}</span>
                     </label>
                   ))}
                 </div>
@@ -403,8 +598,8 @@ export default function QuestFormDialog({
               <div className="space-y-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div>
-                    <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Daftar Tugas</h3>
-                    <p className="text-[11px] text-slate-400 font-normal mt-0.5">Tugas yang harus diselesaikan pemain untuk menuntaskan misi.</p>
+                    <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Tugas yang Harus Diselesaikan</h3>
+                    <p className="text-[11px] text-slate-400 font-normal mt-0.5">Buat daftar hal-hal yang wajib dilakukan pemain untuk menyelesaikan misi.</p>
                   </div>
                   <Button type="button" onClick={handleAddObjective}
                     className="h-9 text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-sm"
@@ -416,7 +611,7 @@ export default function QuestFormDialog({
 
                 {objectives.length === 0 ? (
                   <div className="py-10 text-center text-slate-400 text-sm font-normal bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                    Belum ada tugas. Klik "Tambah Tugas" untuk mulai.
+                    Belum ada tugas. Klik "Tambah Tugas" untuk mulai membuat tugas.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -427,15 +622,35 @@ export default function QuestFormDialog({
                         >
                           <X className="h-3 w-3" />
                         </button>
-                        <p className="text-[11px] text-slate-500 font-semibold mb-3">Tugas #{idx + 1}</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                          <FieldGroup label="Deskripsi Tugas (Indonesia)" compact>
+                        
+                        <div className="flex justify-between items-center mb-3">
+                          <p className="text-[11px] text-slate-500 font-semibold">Tugas #{idx + 1}</p>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              disabled={idx === 0}
+                              onClick={() => handleMoveObjective(idx, "up")}
+                              className="h-6 w-6 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center disabled:opacity-30 cursor-pointer transition-colors"
+                              title="Pindahkan Ke Atas"
+                            >
+                              <ArrowUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={idx === objectives.length - 1}
+                              onClick={() => handleMoveObjective(idx, "down")}
+                              className="h-6 w-6 rounded-lg bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center disabled:opacity-30 cursor-pointer transition-colors"
+                              title="Pindahkan Ke Bawah"
+                            >
+                              <ArrowDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <FieldGroup label="Apa yang harus dilakukan?" compact required>
                             <Input value={obj.descId} onChange={(e) => handleObjectiveChange(idx, "descId", e.target.value)}
-                              placeholder="contoh: Kunjungi Mangrove PIK" required className={`${inputClass} h-9`} />
-                          </FieldGroup>
-                          <FieldGroup label="Deskripsi Tugas (Inggris)" compact>
-                            <Input value={obj.descEn} onChange={(e) => handleObjectiveChange(idx, "descEn", e.target.value)}
-                              placeholder="contoh: Visit PIK Mangrove" required className={`${inputClass} h-9`} />
+                              placeholder="contoh: Foto tanaman bakau yang baru ditanam" required className={`${inputClass} h-9`} />
                           </FieldGroup>
                           <FieldGroup label="Jenis Tugas" compact>
                             <select value={obj.type} onChange={(e) => handleObjectiveChange(idx, "type", e.target.value)}
@@ -455,43 +670,94 @@ export default function QuestFormDialog({
           {/* ═══ STEP 3: Hadiah & Kuis ═══ */}
           {formStep === 3 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Tentukan hadiah dan hubungkan kuis pengetahuan jika diperlukan.</p>
+              <p className="text-xs text-slate-400 font-normal">Tentukan hadiah yang didapat pemain setelah menyelesaikan misi.</p>
+
+              {/* Ringkasan Misi */}
+              <div className="bg-emerald-50/50 p-4 sm:p-5 rounded-2xl border border-emerald-100 space-y-3">
+                <h3 className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Compass className="h-4 w-4 text-emerald-600 animate-pulse" /> Ringkasan Misi (Sebelum Simpan)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">ID Misi:</span>
+                    <span className="font-semibold text-slate-700">{questId || "-"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Judul Misi:</span>
+                    <span className="font-semibold text-slate-700">{titleId || "-"}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Kategori:</span>
+                    <span className="font-semibold text-slate-700">{QUEST_TYPES.find(t => t.value === type)?.label || type}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Kesulitan:</span>
+                    <span className="font-semibold text-slate-700">{DIFFICULTIES.find(d => d.value === difficulty)?.label || difficulty}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Destinasi:</span>
+                    <span className="font-semibold text-slate-700">
+                      {locations.find(l => l.id === locationId)?.nameId || "-"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Daftar Level:</span>
+                    <span className="font-semibold text-slate-700">
+                      {availableLevels.length > 0 ? availableLevels.join(", ") : "Belum dipilih"}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Syarat Level:</span>
+                    <span className="font-semibold text-slate-700">Level {requiredLevel}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Estimasi Waktu:</span>
+                    <span className="font-semibold text-slate-700">{estimatedTimeId ? `${estimatedTimeId} menit` : "-"}</span>
+                  </div>
+                  <div className="flex gap-2 sm:col-span-2">
+                    <span className="text-slate-400 w-24 shrink-0 font-medium">Jumlah Tugas:</span>
+                    <span className="font-semibold text-slate-700">
+                      {objectives.length} tugas
+                    </span>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-3">
                 <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Hadiah Misi</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FieldGroup label="Poin Pengalaman (XP)" hint="Jumlah XP yang didapat">
-                    <Input type="number" value={rewardXp} onChange={(e) => setRewardXp(e.target.value)} required className={inputClass} />
+                  <FieldGroup label="Poin Pengalaman (XP)" hint="Jumlah poin pengalaman (XP) yang diperoleh pemain saat menyelesaikan misi" required>
+                    <Input type="number" value={rewardXp} onChange={(e) => { setRewardXp(e.target.value); setIsDirty(true); }} required className={inputClass} />
                   </FieldGroup>
-                  <FieldGroup label="Koin Hadiah" hint="Jumlah koin yang didapat">
-                    <Input type="number" value={rewardPoints} onChange={(e) => setRewardPoints(e.target.value)} required className={inputClass} />
+                  <FieldGroup label="Koin Hadiah" hint="Jumlah koin (NusaCoin) yang didapatkan pemain sebagai hadiah" required>
+                    <Input type="number" value={rewardPoints} onChange={(e) => { setRewardPoints(e.target.value); setIsDirty(true); }} required className={inputClass} />
                   </FieldGroup>
-                  <FieldGroup label="Cerita yang Terbuka" hint="opsional — buka cerita baru">
-                    <select value={rewardStory} onChange={(e) => setRewardStory(e.target.value)} className={selectClass}>
-                      <option value="">Tidak ada</option>
+                  <FieldGroup label="Cerita yang Terbuka" hint="Kisah budaya baru yang akan terbuka di jurnal pemain (opsional)">
+                    <select value={rewardStory} onChange={(e) => { setRewardStory(e.target.value); setIsDirty(true); }} className={selectClass}>
+                      <option value="">Tidak ada cerita</option>
                       {stories.map((st) => <option key={st.id} value={st.id}>{st.titleId}</option>)}
                     </select>
                   </FieldGroup>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <FieldGroup label="Lencana Spesial" hint="opsional">
-                    <Input value={rewardBadge} onChange={(e) => setRewardBadge(e.target.value)} placeholder="contoh: badge_eco_warrior" className={inputClass} />
+                  <FieldGroup label="Lencana Penghargaan" hint="Opsional — nama lencana yang diberikan sebagai kenang-kenangan">
+                    <Input value={rewardBadge} onChange={(e) => { setRewardBadge(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
                   </FieldGroup>
-                  <FieldGroup label="Voucher Diskon" hint="opsional">
-                    <Input value={rewardVoucher} onChange={(e) => setRewardVoucher(e.target.value)} placeholder="contoh: voucher_bakmi" className={inputClass} />
+                  <FieldGroup label="Voucher Diskon" hint="Opsional — kode voucher belanja UMKM untuk pemain">
+                    <Input value={rewardVoucher} onChange={(e) => { setRewardVoucher(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
                   </FieldGroup>
-                  <FieldGroup label="Bingkai Koleksi" hint="opsional">
-                    <Input value={rewardCollectible} onChange={(e) => setRewardCollectible(e.target.value)} placeholder="contoh: collectible_tmii" className={inputClass} />
+                  <FieldGroup label="Bingkai Foto Profil" hint="Opsional — bingkai avatar spesial untuk koleksi pemain">
+                    <Input value={rewardCollectible} onChange={(e) => { setRewardCollectible(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
                   </FieldGroup>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Hubungkan Kuis</h3>
-                <p className="text-[11px] text-slate-400 font-normal">Opsional — hubungkan misi ini dengan pertempuran kuis pengetahuan.</p>
-                <select value={battleId} onChange={(e) => setBattleId(e.target.value)} className={selectClass}>
-                  <option value="">Tidak dihubungkan</option>
+                <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Kuis Pengetahuan</h3>
+                <p className="text-[11px] text-slate-400 font-normal">Opsional — tambahkan kuis agar pemain bisa menguji pengetahuan sejarah atau budaya lokal.</p>
+                <select value={battleId} onChange={(e) => { setBattleId(e.target.value); setIsDirty(true); }} className={selectClass}>
+                  <option value="">Tidak ada kuis</option>
                   {battles.map((bt) => <option key={bt.id} value={bt.id}>{bt.titleId}</option>)}
                 </select>
               </div>
@@ -510,7 +776,7 @@ export default function QuestFormDialog({
               )}
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}
                 className="h-10 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
               >
                 Batal
@@ -519,7 +785,7 @@ export default function QuestFormDialog({
                 <Button 
                   key="btn-next-quest"
                   type="button" 
-                  onClick={() => setFormStep(s => s + 1)}
+                  onClick={handleNextStep}
                   className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 rounded-xl"
                 >
                   Selanjutnya <ChevronRight className="h-4 w-4" />
@@ -540,6 +806,28 @@ export default function QuestFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Full-image Preview Modal */}
+      {previewImageUrl && (
+        <Dialog open={!!previewImageUrl} onOpenChange={() => setPreviewImageUrl("")}>
+          <DialogContent className="max-w-4xl p-1 bg-black/90 border-0 flex items-center justify-center rounded-2xl overflow-hidden">
+            <div className="relative w-full h-[80vh]">
+              <button
+                type="button"
+                onClick={() => setPreviewImageUrl("")}
+                className="absolute top-4 right-4 z-50 p-2 bg-black/60 hover:bg-black/80 rounded-full text-white cursor-pointer transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <img
+                src={previewImageUrl}
+                alt="Pratinjau Misi Penuh"
+                className="w-full h-full object-contain select-none"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }

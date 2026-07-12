@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Loader2, Play, Pause } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Play, Pause, X, HelpCircle } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "@/components/admin/FieldGroup";
 
@@ -32,6 +32,88 @@ export default function AdminSongs() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [playingSongId, setPlayingSongId] = useState<string | null>(null);
   const [wasValidated, setWasValidated] = useState(false);
+
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Kelola Lagu BGM! 🎵",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Kelola Lagu Latar. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Tambah Lagu Latar ➕",
+      content: "Klik tombol ini untuk mendaftarkan BGM baru. Sistem membatasi maksimal 2 lagu BGM aktif agar ukuran bundle assets permainan tetap ringan dan optimal.",
+      selector: "#add-song-btn"
+    },
+    {
+      title: "Daftar Lagu Latar 🎶",
+      content: "Seluruh lagu latar yang terdaftar ditampilkan di sini. Anda dapat memutar pratinjau audio secara real-time, mengaktifkan/menonaktifkan lagu, mengubah judul, atau menghapusnya.",
+      selector: "#songs-grid"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola Lagu Latar (BGM) NusaQuest. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 245 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -191,6 +273,23 @@ export default function AdminSongs() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      <style>{`
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important;
+          pointer-events: none !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+          50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important; }
+          100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
@@ -200,14 +299,26 @@ export default function AdminSongs() {
             {" "}<span className="text-emerald-600 font-semibold">(Maksimal 2 lagu terdaftar)</span>
           </p>
         </div>
-        <Button
-          onClick={handleOpenAdd}
-          disabled={songs.length >= 2}
-          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 disabled:opacity-50 shadow-sm transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Lagu ({songs.length}/2)</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setTourActiveStep(0)}
+            variant="outline"
+            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+            title="Mulai Tur Fitur"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            id="add-song-btn"
+            onClick={handleOpenAdd}
+            disabled={songs.length >= 2}
+            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 disabled:opacity-50 shadow-sm transition-all cursor-pointer"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            <span>Tambah Lagu ({songs.length}/2)</span>
+          </Button>
+        </div>
       </div>
 
       {/* Grid */}
@@ -231,11 +342,19 @@ export default function AdminSongs() {
           ))}
         </div>
       ) : songs.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal bg-white rounded-2xl border border-slate-200/80 p-8 shadow-sm">
-          Belum ada lagu BGM yang didaftarkan.
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <Play className="h-7 w-7 text-slate-400 pl-0.5" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">Belum Ada Lagu BGM</h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              Belum ada lagu latar belakang permainan yang didaftarkan di sistem. Mulai tambahkan dengan mengeklik tombol di atas.
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
+        <div id="songs-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
           {songs.map((song) => (
             <div key={song.id} className={`border border-slate-200/80 bg-white flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl overflow-hidden ${
               song.isActive ? "ring-2 ring-emerald-500/20" : ""
@@ -409,6 +528,75 @@ export default function AdminSongs() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Feature Tour Tooltip Overlay */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Backdrop screen mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { authMiddleware, requireAdmin, JWTPayload } from "../middleware/auth";
 import { UmkmCategory } from "@prisma/client";
 import { mapUmkm } from "../lib/mappers";
+import { translateToEnglish } from "../lib/translate";
 
 type Env = {
   Variables: {
@@ -44,8 +45,8 @@ umkmRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { id, name, descId, descEn, category, products, imageUrl, rating, voucherAvailable, locationId } = body;
 
-    if (!name || !descId || !descEn || !category || !locationId) {
-      return c.json({ error: "Field wajib belum lengkap: name, descId, descEn, category, locationId" }, 400);
+    if (!name || !descId || !category || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: name, descId, category, locationId" }, 400);
     }
 
     if (id) {
@@ -53,12 +54,14 @@ umkmRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
       if (existing) return c.json({ error: "UMKM dengan ID tersebut sudah ada" }, 409);
     }
 
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
+
     const newUmkm = await prisma.umkm.create({
       data: {
         id: id || undefined,
         name,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         category: category as UmkmCategory,
         products: products || [],
         imageUrl,
@@ -80,16 +83,18 @@ umkmRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { name, descId, descEn, category, products, imageUrl, rating, voucherAvailable, locationId } = body;
 
-    if (!name || !descId || !descEn || !category || !locationId) {
-      return c.json({ error: "Field wajib belum lengkap: name, descId, descEn, category, locationId" }, 400);
+    if (!name || !descId || !category || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: name, descId, category, locationId" }, 400);
     }
+
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
 
     const updatedUmkm = await prisma.umkm.update({
       where: { id },
       data: {
         name,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         category: category as UmkmCategory,
         products: products || [],
         imageUrl,

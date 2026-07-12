@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2, BookOpen, Loader2, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, BookOpen, Loader2, Search, ChevronLeft, ChevronRight, Check, X, ChevronDown, HelpCircle } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "@/components/admin/FieldGroup";
 
@@ -54,12 +54,97 @@ export default function AdminStories() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [wasValidated, setWasValidated] = useState(false);
 
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Kelola Kisah Cerita! 📖",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Kelola Kisah Cerita. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Pencarian & Filter Kategori 🔍",
+      content: "Gunakan panel filter ini untuk mencari kisah dengan kata kunci judul cerita atau memilah berdasarkan kategori kisah.",
+      selector: "#filter-bar"
+    },
+    {
+      title: "Tambah Kisah Baru ➕",
+      content: "Klik tombol ini untuk mendaftarkan kisah cerita baru. Anda dapat memautkan kisah ke lokasi tertentu, menghubungkannya dengan quest pembuka, serta mengunggah gambar ilustrasi.",
+      selector: "#add-story-btn"
+    },
+    {
+      title: "Daftar Kisah Cerita 📚",
+      content: "Seluruh kisah cerita yang terdaftar ditampilkan di sini. Anda dapat mengubah data narasi, menghapus kisah secara aman, atau melihat pratinjau gambar penuh.",
+      selector: "#stories-grid"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola konten kisah cerita NusaQuest. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 245 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
+
   // Form Fields
   const [storyId, setStoryId] = useState("");
   const [titleId, setTitleId] = useState("");
-  const [titleEn, setTitleEn] = useState("");
   const [contentId, setContentId] = useState("");
-  const [contentEn, setContentEn] = useState("");
   const [category, setCategory] = useState("budaya");
   const [imageUrl, setImageUrl] = useState("");
   const [locationId, setLocationId] = useState("");
@@ -117,9 +202,7 @@ export default function AdminStories() {
     setWasValidated(false);
     setStoryId("");
     setTitleId("");
-    setTitleEn("");
     setContentId("");
-    setContentEn("");
     setCategory("budaya");
     setImageUrl("");
     setLocationId(locations[0]?.id || "");
@@ -133,9 +216,7 @@ export default function AdminStories() {
     setWasValidated(false);
     setStoryId(item.id);
     setTitleId(item.titleId);
-    setTitleEn(item.titleEn);
     setContentId(item.contentId);
-    setContentEn(item.contentEn);
     setCategory(item.category);
     setImageUrl(item.imageUrl || "");
     setLocationId(item.locationId);
@@ -148,8 +229,24 @@ export default function AdminStories() {
     if (!file) return;
 
     setUploading(true);
+    let fileToUpload = file;
+    const isHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+    if (isHeic) {
+      toast.info("Mengonversi berkas HEIC/HEIF ke JPEG...");
+      try {
+        const { convertHeicToJpeg } = await import("@/lib/imageHelper");
+        fileToUpload = await convertHeicToJpeg(file);
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal mengonversi gambar HEIC. Harap gunakan format JPG/PNG.");
+        setUploading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     formData.append("entity", "stories");
 
     const token = localStorage.getItem("sinopiquest_token");
@@ -177,7 +274,7 @@ export default function AdminStories() {
     setWasValidated(true);
 
     if (formStep < 2) {
-      if (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId) {
+      if (!storyId.trim() || !titleId.trim() || !locationId) {
         toast.error("Harap lengkapi semua kolom identitas wajib!");
         return;
       }
@@ -185,7 +282,7 @@ export default function AdminStories() {
       return;
     }
 
-    if (!contentId.trim() || !contentEn.trim()) {
+    if (!contentId.trim()) {
       toast.error("Harap lengkapi narasi cerita!");
       return;
     }
@@ -194,9 +291,7 @@ export default function AdminStories() {
     const payload = {
       id: storyId || undefined,
       titleId,
-      titleEn,
       contentId,
-      contentEn,
       category,
       imageUrl,
       locationId,
@@ -247,7 +342,7 @@ export default function AdminStories() {
 
   // ── Filter and Pagination ──
   const filteredStories = stories.filter((story) => {
-    const matchSearch = !searchQuery || 
+    const matchSearch = !searchQuery ||
       story.titleId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       story.titleEn.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCat = !filterCategory || story.category === filterCategory;
@@ -272,42 +367,76 @@ export default function AdminStories() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      <style>{`
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important;
+          pointer-events: none !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+          50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important; }
+          100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight">Kelola Kisah Cerita</h2>
-          <p className="text-xs text-slate-400 mt-0.5 font-normal">Tulis cerita lokal, dongeng, dan fakta sejarah destinasi wisata.</p>
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">
+            <span className="text-emerald-600 font-semibold">Tulis cerita lokal, dongeng, dan fakta sejarah destinasi wisata.</span>
+          </p>
         </div>
-        <Button
-          onClick={handleOpenAdd}
-          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Cerita</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setTourActiveStep(0)}
+            variant="outline"
+            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+            title="Mulai Tur Fitur"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            id="add-story-btn"
+            onClick={handleOpenAdd}
+            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            <span>Tambah Cerita</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+      <div id="filter-bar" className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari judul cerita..."
-            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-xl"
+            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-full"
           />
         </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full h-10 pl-4 pr-10 rounded-full border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all cursor-pointer appearance-none"
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       <p className="text-[11px] text-slate-400 font-normal px-1">
@@ -343,29 +472,51 @@ export default function AdminStories() {
           ))}
         </div>
       ) : paginatedStories.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
-          {searchQuery || filterCategory 
-            ? "Tidak ada data kisah yang cocok dengan pencarian Anda." 
-            : "Belum ada kisah cerita yang terdaftar."}
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <BookOpen className="h-7 w-7 text-slate-400" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">
+              {searchQuery || filterCategory ? "Kisah Tidak Ditemukan" : "Belum Ada Kisah Cerita"}
+            </h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              {searchQuery || filterCategory
+                ? "Tidak ada kisah cerita yang cocok dengan kata kunci pencarian atau filter kategori Anda."
+                : "Daftar kisah cerita masih kosong. Mulai tambahkan dengan mengeklik tombol di atas."}
+            </p>
+          </div>
+          {(searchQuery || filterCategory) && (
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterCategory("");
+              }}
+              variant="outline"
+              className="h-9 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 bg-white rounded-full transition-all cursor-pointer shadow-xs"
+            >
+              Reset Filter & Pencarian
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div id="stories-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedStories.map((story) => {
             const isBroken = !!brokenImages[story.id];
             return (
               <div key={story.id} className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
                 <div>
-                  <div 
+                  <div
                     onClick={() => story.imageUrl && !isBroken && setPreviewImageUrl(story.imageUrl)}
-                    className={`h-44 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden ${
-                      story.imageUrl && !isBroken ? "cursor-zoom-in" : ""
-                    }`}
+                    className={`h-44 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden ${story.imageUrl && !isBroken ? "cursor-zoom-in" : ""
+                      }`}
                   >
                     {story.imageUrl && !isBroken ? (
-                      <img 
-                        src={story.imageUrl} 
-                        alt={story.titleId} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      <img
+                        src={story.imageUrl}
+                        alt={story.titleId}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={() => setBrokenImages(prev => ({ ...prev, [story.id]: true }))}
                       />
                     ) : (
@@ -419,7 +570,7 @@ export default function AdminStories() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {filteredStories.length > 0 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
             className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
@@ -431,11 +582,10 @@ export default function AdminStories() {
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button key={page} onClick={() => setCurrentPage(page)}
-                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
-                  page === currentPage
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                }`}
+                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${page === currentPage
+                  ? "bg-emerald-600 text-white shadow-sm"
+                  : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  }`}
               >
                 {page}
               </button>
@@ -468,35 +618,31 @@ export default function AdminStories() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (s.num === 2 && (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId)) {
+                      if (s.num === 2 && (!storyId.trim() || !titleId.trim() || !locationId)) {
                         toast.error("Harap isi identitas cerita sebelum menulis narasi!");
                         return;
                       }
                       setFormStep(s.num);
                     }}
-                    className={`flex items-center gap-2 transition-all ${
-                      formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
-                    }`}
+                    className={`flex items-center gap-2 transition-all ${formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
+                      }`}
                   >
-                    <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${
-                      formStep > s.num
-                        ? "bg-emerald-600 text-white"
-                        : formStep === s.num
+                    <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${formStep > s.num
+                      ? "bg-emerald-600 text-white"
+                      : formStep === s.num
                         ? "bg-emerald-600 text-white ring-[3px] ring-emerald-100"
                         : "bg-slate-100 text-slate-400"
-                    }`}>
+                      }`}>
                       {formStep > s.num ? <Check className="h-4 w-4" /> : s.num}
                     </span>
-                    <span className={`text-xs hidden sm:inline ${
-                      formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
-                    }`}>
+                    <span className={`text-xs hidden sm:inline ${formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
+                      }`}>
                       {s.title}
                     </span>
                   </button>
                   {i < stepLabels.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${
-                      formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
-                    }`} />
+                    <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
+                      }`} />
                   )}
                 </div>
               ))}
@@ -504,42 +650,33 @@ export default function AdminStories() {
           </div>
 
           <form onSubmit={handleSubmit} className="px-6 sm:px-8 pb-6">
-            
+
             {/* Step 1: Identitas Cerita */}
             {formStep === 1 && (
               <div className="space-y-4 animate-in fade-in duration-200">
                 <p className="text-xs text-slate-400 font-normal">Tentukan kode ID unik cerita, judul, dan relasi lokasi.</p>
-                
+
                 <div className="grid grid-cols-1 gap-4">
                   <FieldGroup label="ID Kisah Unik" hint="Gunakan kode huruf kecil & underscore (contoh: sejarah_lawang_sewu)">
-                    <Input 
-                      value={storyId} 
-                      onChange={(e) => setStoryId(e.target.value)} 
-                      placeholder="sejarah_lawang_sewu" 
-                      required 
+                    <Input
+                      value={storyId}
+                      onChange={(e) => setStoryId(e.target.value)}
+                      placeholder="sejarah_lawang_sewu"
+                      required
                       disabled={!!editingItem}
-                      className={`${inputClass} ${wasValidated && !storyId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                      className={`${inputClass} ${wasValidated && !storyId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
                   <FieldGroup label="Judul Kisah (Indonesia)">
-                    <Input 
-                      value={titleId} 
-                      onChange={(e) => setTitleId(e.target.value)} 
-                      placeholder="contoh: Misteri Sumur Lawang Sewu" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !titleId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Judul Kisah (Inggris)">
-                    <Input 
-                      value={titleEn} 
-                      onChange={(e) => setTitleEn(e.target.value)} 
-                      placeholder="contoh: Mystery of Lawang Sewu" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !titleEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    <Input
+                      value={titleId}
+                      onChange={(e) => setTitleId(e.target.value)}
+                      placeholder="contoh: Misteri Sumur Lawang Sewu"
+                      required
+                      className={`${inputClass} ${wasValidated && !titleId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                 </div>
@@ -594,25 +731,15 @@ export default function AdminStories() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
                   <FieldGroup label="Narasi Cerita (Indonesia)">
-                    <textarea 
-                      value={contentId} 
-                      onChange={(e) => setContentId(e.target.value)} 
-                      placeholder="Tuliskan dongeng atau sejarah lengkap di sini..." 
-                      required 
-                      rows={6} 
-                      className={`${textareaClass} ${wasValidated && !contentId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Narasi Cerita (Inggris)">
-                    <textarea 
-                      value={contentEn} 
-                      onChange={(e) => setContentEn(e.target.value)} 
-                      placeholder="Write down the detailed story or historical facts here..." 
-                      required 
-                      rows={6} 
-                      className={`${textareaClass} ${wasValidated && !contentEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    <textarea
+                      value={contentId}
+                      onChange={(e) => setContentId(e.target.value)}
+                      placeholder="Tuliskan dongeng atau sejarah lengkap di sini..."
+                      required
+                      rows={6}
+                      className={`${textareaClass} ${wasValidated && !contentId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                 </div>
@@ -637,13 +764,13 @@ export default function AdminStories() {
                   Batal
                 </Button>
                 {formStep < 2 && (
-                  <Button 
+                  <Button
                     key="btn-next-story"
-                    type="button" 
+                    type="button"
                     onClick={() => {
-                      if (!storyId.trim() || !titleId.trim() || !titleEn.trim() || !locationId) {
+                      if (!storyId.trim() || !titleId.trim() || !locationId) {
                         setWasValidated(true);
-                        toast.error("Harap isi identitas cerita sebelum menulis narasi!");
+                        toast.error("Harap lengkapi semua kolom wajib!");
                         return;
                       }
                       setFormStep(2);
@@ -654,9 +781,9 @@ export default function AdminStories() {
                   </Button>
                 )}
                 {formStep === 2 && (
-                  <Button 
+                  <Button
                     key="btn-submit-story"
-                    type="submit" 
+                    type="submit"
                     disabled={uploading}
                     className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm rounded-xl"
                   >
@@ -672,18 +799,18 @@ export default function AdminStories() {
 
       {/* Premium Lightbox Overlay */}
       {previewImageUrl && (
-        <div 
+        <div
           onClick={() => setPreviewImageUrl(null)}
           className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out animate-in fade-in duration-200"
         >
           <div className="relative max-w-5xl max-h-[90vh]">
-            <img 
-              src={previewImageUrl} 
-              alt="Pratinjau Kisah" 
-              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none animate-in zoom-in-95 duration-200" 
+            <img
+              src={previewImageUrl}
+              alt="Pratinjau Kisah"
+              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             />
-            <button 
+            <button
               onClick={() => setPreviewImageUrl(null)}
               className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-all shadow-md text-lg font-bold"
             >
@@ -705,15 +832,15 @@ export default function AdminStories() {
             </p>
           </div>
           <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 mt-2 justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setDeleteConfirmId(null)}
               className="h-9 px-4 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
             >
               Batal
             </Button>
-            <Button 
+            <Button
               type="button"
               onClick={() => {
                 if (deleteConfirmId) {
@@ -728,6 +855,75 @@ export default function AdminStories() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Feature Tour Tooltip Overlay */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Backdrop screen mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

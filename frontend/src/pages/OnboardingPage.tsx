@@ -43,9 +43,14 @@ export default function OnboardingPage() {
   const selectedCharacter = CHARACTERS.find((c) => c.id === selectedCharId);
   const lang = player.language || "id";
 
-  // Pre-fill name from auth profile if authenticated and automatically proceed to step 2
+  // Pre-fill name from auth profile if authenticated and automatically proceed
   useEffect(() => {
     if (user) {
+      // Auto-redirect admin/super_admin to admin panel
+      if (user.role === 'admin' || user.role === 'super_admin') {
+        navigate('/admin', { replace: true });
+        return;
+      }
       setName(user.name);
       setStep(2);
     }
@@ -381,7 +386,11 @@ export default function OnboardingPage() {
                 )}
                 <Button
                   variant="outline"
-                  onClick={signOut}
+                  onClick={() => {
+                    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+                      signOut();
+                    }
+                  }}
                   className="h-9 text-[10px] font-bold text-slate-700 border-slate-200 bg-white hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5"
                 >
                   <LogOut className="h-3.5 w-3.5" />

@@ -17,9 +17,7 @@ export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
-    <div className={`border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl ${
-      isEco ? "ring-2 ring-emerald-500/20" : ""
-    }`}>
+    <div className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
       {isEco && (
         <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md z-20">
           Eco

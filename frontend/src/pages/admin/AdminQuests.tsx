@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, X, HelpCircle, Compass } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import type {
   QuestItem, LocationItem, UmkmItem, BattleItem, StoryItem,
@@ -36,6 +36,93 @@ export default function AdminQuests() {
 
   // ── Pagination State ──
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Kelola Misi! 🧭",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Kelola Misi Petualangan. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Pencarian & Filter Misi 🔍",
+      content: "Gunakan panel filter ini untuk memilah misi berdasarkan tipe (kunjungan, kuis, eco-quest), tingkat kesulitan, serta level prasyarat pemain.",
+      selector: "#filter-bar"
+    },
+    {
+      title: "Tambah Misi Baru ➕",
+      content: "Klik tombol ini untuk merancang misi petualangan baru. Anda dapat memautkan misi ke lokasi wisata, UMKM lokal, musuh pertempuran, atau kisah cerita.",
+      selector: "#add-quest-btn"
+    },
+    {
+      title: "Daftar Misi Petualangan 🗺️",
+      content: "Seluruh misi yang terdaftar ditampilkan di sini. Anda dapat mengubah detail tantangan, mengedit opsi kuis, atau menghapus misi dengan aman.",
+      selector: "#quests-grid"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola Misi Petualangan NusaQuest. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 245 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
 
   // ── Data Fetching ──
 
@@ -141,21 +228,50 @@ export default function AdminQuests() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      <style>{`
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important;
+          pointer-events: none !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+          50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important; }
+          100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+        }
+      `}</style>
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight">Kelola Misi</h2>
           <p className="text-xs text-slate-400 mt-0.5 font-normal">
-            <span className="text-emerald-600 font-semibold">Eco-misi ditampilkan paling atas.</span>
-            {" "}Kelola tantangan petualangan pemain.
+            <span className="text-emerald-600 font-semibold">Kelola tantangan petualangan pemain.</span>
           </p>
         </div>
-        <Button onClick={handleOpenAdd}
-          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
-        >
-          <Plus className="h-4 w-4" />
-          Tambah Misi
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setTourActiveStep(0)}
+            variant="outline"
+            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+            title="Mulai Tur Fitur"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            id="add-quest-btn"
+            onClick={handleOpenAdd}
+            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            <span>Tambah Misi</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -198,11 +314,38 @@ export default function AdminQuests() {
           ))}
         </div>
       ) : paginatedQuests.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal">
-          {sortedQuests.length === 0 ? "Belum ada misi." : "Tidak ada misi yang cocok dengan filter."}
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <Compass className="h-7 w-7 text-slate-400" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">
+              {isFiltered ? "Misi Tidak Ditemukan" : "Belum Ada Misi"}
+            </h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              {isFiltered
+                ? "Tidak ada misi petualangan yang cocok dengan kata kunci pencarian atau kombinasi filter Anda."
+                : "Daftar misi petualangan masih kosong. Mulai tambahkan dengan mengeklik tombol di atas."}
+            </p>
+          </div>
+          {isFiltered && (
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterType("");
+                setFilterDifficulty("");
+                setFilterLevel("");
+              }}
+              variant="outline"
+              className="h-9 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 bg-white rounded-full transition-all cursor-pointer shadow-xs"
+            >
+              Reset Filter & Pencarian
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div id="quests-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedQuests.map((q) => (
             <QuestCard key={q.id} quest={q} onEdit={handleOpenEdit} onDelete={setDeleteConfirmId} />
           ))}
@@ -210,7 +353,7 @@ export default function AdminQuests() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {sortedQuests.length > 0 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
             className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
@@ -222,11 +365,10 @@ export default function AdminQuests() {
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
               <button key={page} onClick={() => setCurrentPage(page)}
-                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
-                  page === currentPage
+                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${page === currentPage
                     ? "bg-emerald-600 text-white shadow-sm"
                     : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                }`}
+                  }`}
               >
                 {page}
               </button>
@@ -266,15 +408,15 @@ export default function AdminQuests() {
             </p>
           </div>
           <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 mt-2 justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setDeleteConfirmId(null)}
               className="h-9 px-4 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
             >
               Batal
             </Button>
-            <Button 
+            <Button
               type="button"
               onClick={() => {
                 if (deleteConfirmId) {
@@ -289,6 +431,75 @@ export default function AdminQuests() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Feature Tour Tooltip Overlay */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Backdrop screen mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

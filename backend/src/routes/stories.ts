@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { authMiddleware, requireAdmin, JWTPayload } from "../middleware/auth";
 import { StoryCategory } from "@prisma/client";
 import { mapStory } from "../lib/mappers";
+import { translateToEnglish } from "../lib/translate";
 
 type Env = {
   Variables: {
@@ -43,8 +44,8 @@ storyRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { id, titleId, titleEn, contentId, contentEn, category, imageUrl, locationId, unlockedByQuestId } = body;
 
-    if (!titleId || !titleEn || !contentId || !contentEn || !category) {
-      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, contentId, contentEn, category" }, 400);
+    if (!titleId || !contentId || !category) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, contentId, category" }, 400);
     }
 
     if (id) {
@@ -52,13 +53,16 @@ storyRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
       if (existing) return c.json({ error: "Cerita dengan ID tersebut sudah ada" }, 409);
     }
 
+    const resolvedTitleEn = titleEn || await translateToEnglish(titleId);
+    const resolvedContentEn = contentEn || await translateToEnglish(contentId);
+
     const newStory = await prisma.story.create({
       data: {
         id: id || undefined,
         titleId,
-        titleEn,
+        titleEn: resolvedTitleEn,
         contentId,
-        contentEn,
+        contentEn: resolvedContentEn,
         category: category as StoryCategory,
         imageUrl,
         locationId,
@@ -78,17 +82,20 @@ storyRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { titleId, titleEn, contentId, contentEn, category, imageUrl, locationId, unlockedByQuestId } = body;
 
-    if (!titleId || !titleEn || !contentId || !contentEn || !category) {
-      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, contentId, contentEn, category" }, 400);
+    if (!titleId || !contentId || !category) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, contentId, category" }, 400);
     }
+
+    const resolvedTitleEn = titleEn || await translateToEnglish(titleId);
+    const resolvedContentEn = contentEn || await translateToEnglish(contentId);
 
     const updatedStory = await prisma.story.update({
       where: { id },
       data: {
         titleId,
-        titleEn,
+        titleEn: resolvedTitleEn,
         contentId,
-        contentEn,
+        contentEn: resolvedContentEn,
         category: category as StoryCategory,
         imageUrl,
         locationId,

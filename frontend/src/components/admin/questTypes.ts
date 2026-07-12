@@ -3,7 +3,7 @@
 export interface QuestObjective {
   id?: string;
   descId: string;
-  descEn: string;
+  descEn?: string;
   type: string;
   sortOrder: number;
 }
@@ -81,20 +81,20 @@ export const DIFFICULTIES = [
 ];
 
 export const OBJECTIVE_TYPES = [
-  { value: "visit_location", label: "Kunjungi Lokasi" },
-  { value: "scan_qr", label: "Pindai QR Code" },
-  { value: "answer_quiz", label: "Jawab Kuis" },
-  { value: "take_photo", label: "Ambil Foto" },
-  { value: "buy_product", label: "Beli Produk UMKM" },
+  { value: "visit_location", label: "Kunjungi Destinasi" },
+  { value: "scan_qr", label: "Pindai Kode QR" },
+  { value: "answer_quiz", label: "Jawab Kuis Pengetahuan" },
+  { value: "take_photo", label: "Unggah Foto" },
+  { value: "buy_product", label: "Beli Produk UMKM Lokal" },
   { value: "write_review", label: "Tulis Ulasan" },
-  { value: "eco_action", label: "Aksi Lingkungan" },
-  { value: "social_interact", label: "Interaksi Warga" },
+  { value: "eco_action", label: "Aksi Ramah Lingkungan" },
+  { value: "social_interact", label: "Bicara dengan Warga Lokal" },
 ];
 
 export const STEP_LABELS = [
   { num: 1, title: "Informasi Dasar" },
-  { num: 2, title: "Target & Level" },
-  { num: 3, title: "Hadiah & Kuis" },
+  { num: 2, title: "Tugas & Tantangan" },
+  { num: 3, title: "Hadiah & Bonus" },
 ];
 
 // ── Helpers ──

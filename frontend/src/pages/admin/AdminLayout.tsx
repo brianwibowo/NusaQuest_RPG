@@ -34,6 +34,13 @@ export default function AdminLayout() {
     });
   };
 
+  const handleLogout = () => {
+    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+      signOut();
+      navigate("/onboarding");
+    }
+  };
+
   const menuItems = [
     { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { to: "/admin/locations", label: "Lokasi Wisata", icon: MapPin },
@@ -131,7 +138,7 @@ export default function AdminLayout() {
               {!isCollapsed && <span className="animate-in fade-in duration-200">Kembali Ke Game</span>}
             </Button>
             <Button
-              onClick={signOut}
+              onClick={handleLogout}
               title="Keluar Sesi"
               variant="ghost"
               className={`w-full h-9 text-[10px] font-semibold text-red-400 hover:text-red-300 hover:bg-red-950/20 gap-2 rounded-xl transition-all ${isCollapsed ? "md:justify-center md:px-0" : "justify-start"

@@ -13,32 +13,16 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { audioManager } from "@/lib/audio";
 import { hapticsManager } from "@/lib/haptics";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { getCategoryStyle } from "@/lib/categoryHelper";
 
 // Custom Leaflet DivIcon helpers for clean RPG markers
 const createCategoryIcon = (category: LocationCategory) => {
-  const emojis: Record<LocationCategory, string> = {
-    wisata_sejarah: "🏛️",
-    wisata_budaya: "🎭",
-    wisata_kuliner: "🍜",
-    ekowisata: "🍃",
-    umkm: "🛍️",
-    hidden_spot: "✨",
-  };
-
-  const bgColors: Record<LocationCategory, string> = {
-    wisata_sejarah: "bg-blue-500 border-blue-200",
-    wisata_budaya: "bg-violet-500 border-violet-200",
-    wisata_kuliner: "bg-orange-500 border-orange-200",
-    ekowisata: "bg-emerald-500 border-emerald-200",
-    umkm: "bg-amber-500 border-amber-200",
-    hidden_spot: "bg-slate-500 border-slate-200",
-  };
-
-  const emoji = emojis[category] || "📍";
-  const bg = bgColors[category] || "bg-emerald-500";
+  const style = getCategoryStyle(category);
+  const emoji = style.emoji || "📍";
+  const bg = style.solidBg || "bg-emerald-500";
 
   return L.divIcon({
-    html: `<div class="flex items-center justify-center w-8 h-8 rounded-full border-2 border-white shadow-md text-sm ${bg} hover:scale-110 transition-transform active:scale-95">${emoji}</div>`,
+    html: `<div class="flex items-center justify-center w-8 h-8 rounded-full border-2 border-white shadow-md text-sm ${bg} text-white hover:scale-110 transition-transform active:scale-95">${emoji}</div>`,
     className: "custom-div-icon",
     iconSize: [32, 32],
     iconAnchor: [16, 16],
@@ -102,19 +86,6 @@ export default function ExploreMapPage() {
     audioManager.playClick();
     hapticsManager.triggerClick();
     setActiveFilter(cat);
-  };
-
-  // Helper to color categorize categories
-  const getCategoryColor = (cat: LocationCategory) => {
-    const colors: Record<LocationCategory, string> = {
-      wisata_sejarah: "bg-blue-100 text-blue-800 border-blue-200",
-      wisata_budaya: "bg-violet-100 text-violet-800 border-violet-200",
-      wisata_kuliner: "bg-orange-100 text-orange-800 border-orange-200",
-      ekowisata: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      umkm: "bg-amber-100 text-amber-800 border-amber-200",
-      hidden_spot: "bg-slate-100 text-slate-800 border-slate-200",
-    };
-    return colors[cat] || "bg-slate-100 text-slate-800";
   };
 
   if (isLoading) {
@@ -190,7 +161,7 @@ export default function ExploreMapPage() {
                   <Popup className="leaflet-custom-popup">
                     <div className="space-y-2 p-1 max-w-[200px]">
                       <div className="space-y-0.5">
-                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded border uppercase tracking-wider ${getCategoryColor(loc.category)}`}>
+                        <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded border uppercase tracking-wider ${getCategoryStyle(loc.category).lightBg}`}>
                           {loc.category.replace("wisata_", "").replace("eko", "eco")}
                         </span>
                         <h4 className="font-bold text-slate-800 text-xs mt-1 leading-snug">{loc.name[lang]}</h4>
@@ -239,7 +210,7 @@ export default function ExploreMapPage() {
                   </span>
                 </div>
               </div>
-              <span className={`text-[8px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${getCategoryColor(loc.category)}`}>
+              <span className={`text-[8px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider whitespace-nowrap ${getCategoryStyle(loc.category).lightBg}`}>
                 {loc.category.replace("wisata_", "").replace("eko", "eco")}
               </span>
             </div>

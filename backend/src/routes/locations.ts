@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { authMiddleware, requireAdmin, JWTPayload } from "../middleware/auth";
 import { LocationCategory } from "@prisma/client";
 import { mapLocation } from "../lib/mappers";
+import { translateToEnglish } from "../lib/translate";
 
 type Env = {
   Variables: {
@@ -58,22 +59,26 @@ locationRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     const { nameId, nameEn, descId, descEn, category, latitude, longitude, imageUrl, addressId, addressEn } = body;
 
     // Validasi field wajib
-    if (!nameId || !nameEn || !descId || !descEn || !category || latitude == null || longitude == null) {
-      return c.json({ error: "Field wajib belum lengkap: nameId, nameEn, descId, descEn, category, latitude, longitude" }, 400);
+    if (!nameId || !descId || !category || latitude == null || longitude == null) {
+      return c.json({ error: "Field wajib belum lengkap: nameId, descId, category, latitude, longitude" }, 400);
     }
+
+    const resolvedNameEn = nameEn || await translateToEnglish(nameId);
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
+    const resolvedAddressEn = addressEn || (addressId ? await translateToEnglish(addressId) : null);
 
     const newLocation = await prisma.location.create({
       data: {
         nameId,
-        nameEn,
+        nameEn: resolvedNameEn,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         category: category as LocationCategory,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         imageUrl,
         addressId,
-        addressEn,
+        addressEn: resolvedAddressEn,
       },
     });
     return c.json(newLocation, 201);
@@ -89,23 +94,27 @@ locationRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     const body = await c.req.json();
     const { nameId, nameEn, descId, descEn, category, latitude, longitude, imageUrl, addressId, addressEn } = body;
 
-    if (!nameId || !nameEn || !descId || !descEn || !category || latitude == null || longitude == null) {
-      return c.json({ error: "Field wajib belum lengkap: nameId, nameEn, descId, descEn, category, latitude, longitude" }, 400);
+    if (!nameId || !descId || !category || latitude == null || longitude == null) {
+      return c.json({ error: "Field wajib belum lengkap: nameId, descId, category, latitude, longitude" }, 400);
     }
+
+    const resolvedNameEn = nameEn || await translateToEnglish(nameId);
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
+    const resolvedAddressEn = addressEn || (addressId ? await translateToEnglish(addressId) : null);
 
     const updatedLocation = await prisma.location.update({
       where: { id },
       data: {
         nameId,
-        nameEn,
+        nameEn: resolvedNameEn,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         category: category as LocationCategory,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         imageUrl,
         addressId,
-        addressEn,
+        addressEn: resolvedAddressEn,
       },
     });
     return c.json(updatedLocation);

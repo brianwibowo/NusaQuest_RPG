@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Store, Loader2, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, Store, Loader2, Search, ChevronLeft, ChevronRight, Check, X, ChevronDown, HelpCircle } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "@/components/admin/FieldGroup";
 
@@ -50,11 +50,97 @@ export default function AdminUmkm() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [wasValidated, setWasValidated] = useState(false);
 
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Kelola Mitra UMKM! 🏪",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Kelola Mitra UMKM. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Pencarian & Filter Kategori 🔍",
+      content: "Gunakan panel filter ini untuk mencari UMKM dengan kata kunci nama warung atau memilah berdasarkan kategori UMKM.",
+      selector: "#filter-bar"
+    },
+    {
+      title: "Tambah Mitra UMKM Baru ➕",
+      content: "Klik tombol ini untuk mendaftarkan mitra UMKM baru. Anda dapat memautkan toko ke lokasi wisata tertentu, memasukkan deskripsi produk lokal, serta menandai jika voucher diskon tersedia.",
+      selector: "#add-umkm-btn"
+    },
+    {
+      title: "Daftar Mitra UMKM 🛍️",
+      content: "Seluruh mitra UMKM yang terdaftar ditampilkan di sini. Anda dapat mengubah data, mengelola produk, menghapus secara aman, atau melihat pratinjau foto toko.",
+      selector: "#umkm-grid"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola jaringan Mitra UMKM Lokal NusaQuest. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 245 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
+
   // Form Fields
   const [umkmId, setUmkmId] = useState("");
   const [name, setName] = useState("");
   const [descId, setDescId] = useState("");
-  const [descEn, setDescEn] = useState("");
   const [category, setCategory] = useState("kuliner");
   const [productsStr, setProductsStr] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -109,7 +195,6 @@ export default function AdminUmkm() {
     setUmkmId("");
     setName("");
     setDescId("");
-    setDescEn("");
     setCategory("kuliner");
     setProductsStr("");
     setImageUrl("");
@@ -126,7 +211,6 @@ export default function AdminUmkm() {
     setUmkmId(item.id);
     setName(item.name);
     setDescId(item.descId);
-    setDescEn(item.descEn);
     setCategory(item.category);
     setProductsStr(item.products.join(", "));
     setImageUrl(item.imageUrl || "");
@@ -141,8 +225,24 @@ export default function AdminUmkm() {
     if (!file) return;
 
     setUploading(true);
+    let fileToUpload = file;
+    const isHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+    if (isHeic) {
+      toast.info("Mengonversi berkas HEIC/HEIF ke JPEG...");
+      try {
+        const { convertHeicToJpeg } = await import("@/lib/imageHelper");
+        fileToUpload = await convertHeicToJpeg(file);
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal mengonversi gambar HEIC. Harap gunakan format JPG/PNG.");
+        setUploading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     formData.append("entity", "umkm");
 
     const token = localStorage.getItem("sinopiquest_token");
@@ -170,7 +270,7 @@ export default function AdminUmkm() {
     setWasValidated(true);
 
     if (formStep < 2) {
-      if (!umkmId.trim() || !name.trim() || !descId.trim() || !descEn.trim() || !locationId) {
+      if (!umkmId.trim() || !name.trim() || !descId.trim() || !locationId) {
         toast.error("Harap lengkapi semua kolom informasi toko wajib!");
         return;
       }
@@ -183,7 +283,6 @@ export default function AdminUmkm() {
       id: umkmId || undefined,
       name,
       descId,
-      descEn,
       category,
       products: productsStr.split(",").map((p) => p.trim()).filter((p) => p.length > 0),
       imageUrl,
@@ -258,42 +357,74 @@ export default function AdminUmkm() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      <style>{`
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important;
+          pointer-events: none !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+          50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important; }
+          100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight">Mitra UMKM Lokal</h2>
           <p className="text-xs text-slate-400 mt-0.5 font-normal">Kelola produk mitra, rating warung, dan promosi voucher diskon belanja.</p>
         </div>
-        <Button
-          onClick={handleOpenAdd}
-          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Mitra</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setTourActiveStep(0)}
+            variant="outline"
+            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+            title="Mulai Tur Fitur"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            id="add-umkm-btn"
+            onClick={handleOpenAdd}
+            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            <span>Tambah Mitra</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+      <div id="filter-bar" className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari nama mitra UMKM..."
-            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-xl"
+            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-full"
           />
         </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full h-10 pl-4 pr-10 rounded-full border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all cursor-pointer appearance-none"
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       <p className="text-[11px] text-slate-400 font-normal px-1">
@@ -334,13 +465,36 @@ export default function AdminUmkm() {
           ))}
         </div>
       ) : paginatedUmkm.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
-          {searchQuery || filterCategory 
-            ? "Tidak ada data mitra UMKM yang cocok dengan pencarian Anda." 
-            : "Belum ada mitra UMKM yang terdaftar."}
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <Store className="h-7 w-7 text-slate-400" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">
+              {searchQuery || filterCategory ? "Mitra Tidak Ditemukan" : "Belum Ada Mitra UMKM"}
+            </h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              {searchQuery || filterCategory
+                ? "Tidak ada mitra UMKM yang cocok dengan kata kunci pencarian atau filter kategori Anda."
+                : "Daftar mitra UMKM masih kosong. Mulai tambahkan dengan mengeklik tombol di atas."}
+            </p>
+          </div>
+          {(searchQuery || filterCategory) && (
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterCategory("");
+              }}
+              variant="outline"
+              className="h-9 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 bg-white rounded-full transition-all cursor-pointer shadow-xs"
+            >
+              Reset Filter & Pencarian
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div id="umkm-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedUmkm.map((umkm) => {
             const isBroken = !!brokenImages[umkm.id];
             return (
@@ -419,7 +573,7 @@ export default function AdminUmkm() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {filteredUmkm.length > 0 && (
         <div className="flex items-center justify-center gap-2 pt-2">
           <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
             className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
@@ -468,7 +622,7 @@ export default function AdminUmkm() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (s.num === 2 && (!umkmId.trim() || !name.trim() || !descId.trim() || !descEn.trim() || !locationId)) {
+                      if (s.num === 2 && (!umkmId.trim() || !name.trim() || !descId.trim() || !locationId)) {
                         toast.error("Harap isi informasi toko sebelum menginput produk!");
                         return;
                       }
@@ -560,7 +714,7 @@ export default function AdminUmkm() {
                   </FieldGroup>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
                   <FieldGroup label="Deskripsi (Indonesia)">
                     <textarea 
                       value={descId} 
@@ -569,16 +723,6 @@ export default function AdminUmkm() {
                       required 
                       rows={4} 
                       className={`${textareaClass} ${wasValidated && !descId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Deskripsi (Inggris)">
-                    <textarea 
-                      value={descEn} 
-                      onChange={(e) => setDescEn(e.target.value)} 
-                      placeholder="Write an appealing description of the store..." 
-                      required 
-                      rows={4} 
-                      className={`${textareaClass} ${wasValidated && !descEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
                     />
                   </FieldGroup>
                 </div>
@@ -653,9 +797,9 @@ export default function AdminUmkm() {
                     key="btn-next-umkm"
                     type="button" 
                     onClick={() => {
-                      if (!umkmId.trim() || !name.trim() || !descId.trim() || !descEn.trim() || !locationId) {
+                      if (!umkmId.trim() || !name.trim() || !descId.trim() || !locationId) {
                         setWasValidated(true);
-                        toast.error("Harap isi informasi toko sebelum menginput produk!");
+                        toast.error("Harap lengkapi semua kolom wajib!");
                         return;
                       }
                       setFormStep(2);
@@ -740,6 +884,75 @@ export default function AdminUmkm() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Feature Tour Tooltip Overlay */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Backdrop screen mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

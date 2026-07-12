@@ -9,6 +9,8 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import type { PlayerState, AppLanguage, CharacterRole } from "@/types";
@@ -139,6 +141,7 @@ function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
 interface PlayerContextValue {
   player: PlayerState;
   dispatch: React.Dispatch<PlayerAction>;
+  isPlayerLoading: boolean;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -161,6 +164,8 @@ function loadState(): PlayerState {
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [player, dispatch] = useReducer(playerReducer, null, loadState);
   const { isAuthenticated } = useAuth();
+  const [isPlayerLoading, setIsPlayerLoading] = useState(true);
+  const hasLoadedFromDb = useRef(false);
 
   const syncToDb = (stateToSend = player) => {
     const token = localStorage.getItem("sinopiquest_token");
@@ -190,11 +195,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   // Load from DB when authenticated
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      hasLoadedFromDb.current = false;
+      setIsPlayerLoading(false);
+      return;
+    }
 
     const token = localStorage.getItem("sinopiquest_token");
-    if (!token) return;
+    if (!token) {
+      setIsPlayerLoading(false);
+      return;
+    }
 
+    setIsPlayerLoading(true);
     fetch("/api/progress", {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -227,10 +240,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           });
         }
       })
-      .catch((err) => console.error("Failed to fetch progress from server:", err));
+      .catch((err) => console.error("Failed to fetch progress from server:", err))
+      .finally(() => {
+        hasLoadedFromDb.current = true;
+        setIsPlayerLoading(false);
+      });
   }, [isAuthenticated]);
 
-  // Persist locally and sync changes to DB
+  // Persist locally and sync changes to DB (only after initial DB load is done)
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
@@ -238,13 +255,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       console.warn("Failed to save player state to localStorage");
     }
 
-    if (isAuthenticated) {
+    if (isAuthenticated && hasLoadedFromDb.current) {
       syncToDb(player);
     }
   }, [player, isAuthenticated]);
 
   return (
-    <PlayerContext.Provider value={{ player, dispatch }}>
+    <PlayerContext.Provider value={{ player, dispatch, isPlayerLoading }}>
       {children}
     </PlayerContext.Provider>
   );
@@ -258,5 +275,7 @@ export function usePlayer() {
   }
   return context;
 }
+
+export type { PlayerContextValue };
 
 export type { PlayerAction };

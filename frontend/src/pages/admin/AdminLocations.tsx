@@ -3,11 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Edit2, Trash2, MapPin, Loader2, Search, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, MapPin, Loader2, Search, ChevronLeft, ChevronRight, Check, HelpCircle, BookOpen, Compass, Utensils, Leaf, Store, Sparkles, ExternalLink, X, ChevronDown } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "@/components/admin/FieldGroup";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
+import { getCategoryStyle } from "@/lib/categoryHelper";
 
 interface LocationItem {
   id: string;
@@ -109,17 +110,104 @@ export default function AdminLocations() {
   const [mapSearchQuery, setMapSearchQuery] = useState("");
   const [mapSearching, setMapSearching] = useState(false);
 
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Kelola Lokasi! 🗺️",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Kelola Lokasi Wisata. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Pencarian & Filter Kategori 🔍",
+      content: "Gunakan panel filter ini untuk memotong list lokasi: ketik nama tempat untuk pencarian teks secara instan atau pilih kategori wisata untuk menyaring data.",
+      selector: "#filter-bar"
+    },
+    {
+      title: "Tambah Destinasi Baru ➕",
+      content: "Klik tombol ini untuk mendaftarkan destinasi wisata baru. Di dalam form, Anda dapat mencari alamat otomatis di peta Leaflet, memosisikan pin GPS, serta mengunggah berkas foto (termasuk konversi otomatis format Apple HEIC/HEIF ke JPEG).",
+      selector: "#add-location-btn"
+    },
+    {
+      title: "Daftar Lokasi Wisata 🗺️",
+      content: "Destinasi wisata yang terdaftar ditampilkan di sini. Anda dapat mengubah data, menghapus lewat dialog kustom, atau mengeklik cover foto untuk melihat pratinjau resolusi penuh.",
+      selector: "#locations-grid"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola destinasi wisata NusaQuest dengan efisien. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    // Wait slightly for DOM rendering
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          // Position tooltip below element (or above if not enough viewport room)
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 240 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      // Default centered overlay styling
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
+
   // Form Fields
   const [nameId, setNameId] = useState("");
-  const [nameEn, setNameEn] = useState("");
   const [descId, setDescId] = useState("");
-  const [descEn, setDescEn] = useState("");
   const [category, setCategory] = useState("wisata_sejarah");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [addressId, setAddressId] = useState("");
-  const [addressEn, setAddressEn] = useState("");
   const [uploading, setUploading] = useState(false);
 
   const categories = [
@@ -163,15 +251,12 @@ export default function AdminLocations() {
     setFormStep(1);
     setWasValidated(false);
     setNameId("");
-    setNameEn("");
     setDescId("");
-    setDescEn("");
     setCategory("wisata_sejarah");
     setLatitude("-6.1754"); // Default center Monas
     setLongitude("106.8272");
     setImageUrl("");
     setAddressId("");
-    setAddressEn("");
     setMapSearchQuery("");
     setIsOpen(true);
   };
@@ -181,15 +266,12 @@ export default function AdminLocations() {
     setFormStep(1);
     setWasValidated(false);
     setNameId(item.nameId);
-    setNameEn(item.nameEn);
     setDescId(item.descId);
-    setDescEn(item.descEn);
     setCategory(item.category);
     setLatitude(item.latitude.toString());
     setLongitude(item.longitude.toString());
     setImageUrl(item.imageUrl || "");
     setAddressId(item.addressId || "");
-    setAddressEn(item.addressEn || "");
     setMapSearchQuery("");
     setIsOpen(true);
   };
@@ -199,8 +281,24 @@ export default function AdminLocations() {
     if (!file) return;
 
     setUploading(true);
+    let fileToUpload = file;
+    const isHeic = file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif");
+
+    if (isHeic) {
+      toast.info("Mengonversi berkas HEIC/HEIF ke JPEG...");
+      try {
+        const { convertHeicToJpeg } = await import("@/lib/imageHelper");
+        fileToUpload = await convertHeicToJpeg(file);
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal mengonversi gambar HEIC. Harap gunakan format JPG/PNG.");
+        setUploading(false);
+        return;
+      }
+    }
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileToUpload);
     formData.append("entity", "locations");
 
     const token = localStorage.getItem("sinopiquest_token");
@@ -230,7 +328,6 @@ export default function AdminLocations() {
       const data = await res.json();
       if (data && data.display_name) {
         setAddressId(data.display_name);
-        setAddressEn(data.display_name);
       }
     } catch (err) {
       console.warn("Reverse geocode failed:", err);
@@ -251,7 +348,6 @@ export default function AdminLocations() {
         setLatitude(parseFloat(lat).toFixed(6));
         setLongitude(parseFloat(lon).toFixed(6));
         setAddressId(display_name);
-        setAddressEn(display_name);
         toast.success("Lokasi ditemukan!");
       } else {
         toast.error("Lokasi tidak ditemukan di peta.");
@@ -268,7 +364,7 @@ export default function AdminLocations() {
     setWasValidated(true);
 
     if (formStep < 2) {
-      if (!nameId.trim() || !nameEn.trim() || !descId.trim() || !descEn.trim()) {
+      if (!nameId.trim() || !descId.trim()) {
         toast.error("Harap lengkapi informasi utama terlebih dahulu!");
         return;
       }
@@ -284,15 +380,12 @@ export default function AdminLocations() {
     const token = localStorage.getItem("sinopiquest_token");
     const payload = {
       nameId,
-      nameEn,
       descId,
-      descEn,
       category,
       latitude: parseFloat(latitude) || 0,
       longitude: parseFloat(longitude) || 0,
       imageUrl,
       addressId,
-      addressEn,
     };
 
     const method = editingItem ? "PUT" : "POST";
@@ -336,7 +429,7 @@ export default function AdminLocations() {
 
   // ── Filter and Pagination ──
   const filteredLocs = locations.filter((loc) => {
-    const matchSearch = !searchQuery || 
+    const matchSearch = !searchQuery ||
       loc.nameId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       loc.nameEn.toLowerCase().includes(searchQuery.toLowerCase());
     const matchCat = !filterCategory || loc.category === filterCategory;
@@ -350,7 +443,23 @@ export default function AdminLocations() {
   );
 
   const getCatLabel = (val: string) => categories.find(c => c.value === val)?.label || val;
-  const getCatColor = (val: string) => categories.find(c => c.value === val)?.color || "bg-slate-600";
+
+  const getCatIcon = (cat: string) => {
+    switch (cat) {
+      case "wisata_sejarah":
+        return <BookOpen className="h-3 w-3 mr-1 shrink-0" />;
+      case "wisata_budaya":
+        return <Compass className="h-3 w-3 mr-1 shrink-0" />;
+      case "wisata_kuliner":
+        return <Utensils className="h-3 w-3 mr-1 shrink-0" />;
+      case "ekowisata":
+        return <Leaf className="h-3 w-3 mr-1 shrink-0" />;
+      case "umkm":
+        return <Store className="h-3 w-3 mr-1 shrink-0" />;
+      default:
+        return <Sparkles className="h-3 w-3 mr-1 shrink-0" />;
+    }
+  };
 
   // Reusable input classes with wasValidated styling support
   const inputClass = "h-10 text-sm border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
@@ -375,42 +484,83 @@ export default function AdminLocations() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      {/* Dynamic onboarding highlight styles */}
+      <style>{`
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+          70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          pointer-events: none !important;
+          border-color: #10b981 !important;
+          box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.4) !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        /* Make sure highlighted Leaflet map zoom controls don't overlap awkwardly */
+        #map-container-group.tour-highlighted {
+          background-color: transparent !important;
+        }
+      `}</style>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-800 tracking-tight">Kelola Lokasi Wisata</h2>
-          <p className="text-xs text-slate-400 mt-0.5 font-normal">Kelola data destinasi, marker GPS, dan koordinat peta secara interaktif.</p>
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">
+            <span className="text-emerald-600 font-semibold">Kelola data destinasi, marker GPS, dan koordinat peta secara interaktif.</span>
+          </p>
         </div>
-        <Button
-          onClick={handleOpenAdd}
-          className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Lokasi</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={() => setTourActiveStep(0)}
+            variant="outline"
+            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+            title="Mulai Tur Fitur"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+          <Button
+            id="add-location-btn"
+            type="button"
+            onClick={handleOpenAdd}
+            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 shadow-sm transition-all hover:shadow-md cursor-pointer"
+          >
+            <Plus className="h-4 w-4" strokeWidth={3} />
+            <span>Tambah Lokasi</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+      <div id="filter-bar" className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari nama lokasi..."
-            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-xl"
+            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-full"
           />
         </div>
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c.value} value={c.value}>{c.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="w-full h-10 pl-4 pr-10 rounded-full border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all cursor-pointer appearance-none"
+          >
+            <option value="">Semua Kategori</option>
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       <p className="text-[11px] text-slate-400 font-normal px-1">
@@ -446,29 +596,51 @@ export default function AdminLocations() {
           ))}
         </div>
       ) : paginatedLocs.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal bg-white rounded-2xl border border-slate-200/80 shadow-sm p-8">
-          {searchQuery || filterCategory 
-            ? "Tidak ada data lokasi yang cocok dengan pencarian Anda." 
-            : "Belum ada lokasi wisata yang terdaftar."}
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <MapPin className="h-7 w-7 text-slate-400" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">
+              {searchQuery || filterCategory ? "Lokasi Tidak Ditemukan" : "Belum Ada Lokasi"}
+            </h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              {searchQuery || filterCategory
+                ? "Tidak ada destinasi yang cocok dengan kata kunci pencarian atau filter kategori Anda."
+                : "Daftar lokasi wisata masih kosong. Mulai tambahkan dengan mengeklik tombol di atas."}
+            </p>
+          </div>
+          {(searchQuery || filterCategory) && (
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterCategory("");
+              }}
+              variant="outline"
+              className="h-9 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 bg-white rounded-full transition-all cursor-pointer shadow-xs"
+            >
+              Reset Filter & Pencarian
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div id="locations-grid" className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedLocs.map((loc) => {
             const isBroken = !!brokenImages[loc.id];
             return (
               <div key={loc.id} className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
                 <div>
-                  <div 
+                  <div
                     onClick={() => loc.imageUrl && !isBroken && setPreviewImageUrl(loc.imageUrl)}
-                    className={`h-44 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden ${
-                      loc.imageUrl && !isBroken ? "cursor-zoom-in" : ""
-                    }`}
+                    className={`h-44 bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden ${loc.imageUrl && !isBroken ? "cursor-zoom-in" : ""
+                      }`}
                   >
                     {loc.imageUrl && !isBroken ? (
-                      <img 
-                        src={loc.imageUrl} 
-                        alt={loc.nameId} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      <img
+                        src={loc.imageUrl}
+                        alt={loc.nameId}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={() => setBrokenImages(prev => ({ ...prev, [loc.id]: true }))}
                       />
                     ) : (
@@ -476,9 +648,19 @@ export default function AdminLocations() {
                         <MapPin className="h-10 w-10 animate-pulse" />
                       </div>
                     )}
-                    <span className={`absolute top-3 left-3 text-white text-[8px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-lg shadow-md ${getCatColor(loc.category)}`}>
+                    {/* Glassmorphic Category Badge */}
+                    <span className={`absolute top-3 left-3 text-[8px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg shadow-md flex items-center backdrop-blur-md border z-10 ${getCategoryStyle(loc.category).glassBg}`}>
+                      {getCatIcon(loc.category)}
                       {getCatLabel(loc.category)}
                     </span>
+                    {/* Zoom Overlay Indicator */}
+                    {loc.imageUrl && !isBroken && (
+                      <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 pointer-events-none z-10">
+                        <span className="text-[9px] bg-white/95 text-slate-800 font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 pointer-events-auto">
+                          🔍 Pratinjau Foto
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <CardContent className="p-5 space-y-2.5">
                     <div>
@@ -488,9 +670,27 @@ export default function AdminLocations() {
                     <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 font-normal">
                       {loc.descId}
                     </p>
-                    <div className="pt-2 border-t border-slate-100 text-[9px] uppercase tracking-wider font-normal text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-                      <span>LAT: {loc.latitude}</span>
-                      <span>LNG: {loc.longitude}</span>
+
+                    {/* Maps & Address Metadata */}
+                    <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Buka koordinat di Google Maps"
+                          className="text-[9px] uppercase tracking-wider font-bold text-emerald-600 hover:text-emerald-500 flex items-center gap-1 transition-colors"
+                        >
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span>GPS: {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}</span>
+                          <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                        </a>
+                      </div>
+                      {loc.addressId && (
+                        <p className="text-[10px] text-slate-400 font-normal line-clamp-1 flex items-center gap-1 leading-normal" title={loc.addressId}>
+                          <span className="truncate">{loc.addressId}</span>
+                        </p>
+                      )}
                     </div>
                   </CardContent>
                 </div>
@@ -519,10 +719,13 @@ export default function AdminLocations() {
         </div>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
+      {/* Pagination (Always rendered when matching data exists) */}
+      {filteredLocs.length > 0 && (
         <div className="flex items-center justify-center gap-2 pt-2">
-          <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
+          <Button
+            variant="outline"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
             className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -531,19 +734,23 @@ export default function AdminLocations() {
 
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button key={page} onClick={() => setCurrentPage(page)}
-                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
-                  page === currentPage
-                    ? "bg-emerald-600 text-white shadow-sm"
-                    : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                }`}
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${page === currentPage
+                  ? "bg-emerald-600 text-white shadow-sm font-bold"
+                  : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                  }`}
               >
                 {page}
               </button>
             ))}
           </div>
 
-          <Button variant="outline" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}
+          <Button
+            variant="outline"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
             className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
           >
             <span className="hidden sm:inline">Selanjutnya</span>
@@ -569,35 +776,31 @@ export default function AdminLocations() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (s.num === 2 && (!nameId.trim() || !nameEn.trim() || !descId.trim() || !descEn.trim())) {
+                      if (s.num === 2 && (!nameId.trim() || !descId.trim())) {
                         toast.error("Harap isi informasi utama sebelum membuka peta!");
                         return;
                       }
                       setFormStep(s.num);
                     }}
-                    className={`flex items-center gap-2 transition-all ${
-                      formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
-                    }`}
+                    className={`flex items-center gap-2 transition-all ${formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
+                      }`}
                   >
-                    <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${
-                      formStep > s.num
-                        ? "bg-emerald-600 text-white"
-                        : formStep === s.num
+                    <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${formStep > s.num
+                      ? "bg-emerald-600 text-white"
+                      : formStep === s.num
                         ? "bg-emerald-600 text-white ring-[3px] ring-emerald-100"
                         : "bg-slate-100 text-slate-400"
-                    }`}>
+                      }`}>
                       {formStep > s.num ? <Check className="h-4 w-4" /> : s.num}
                     </span>
-                    <span className={`text-xs hidden sm:inline ${
-                      formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
-                    }`}>
+                    <span className={`text-xs hidden sm:inline ${formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
+                      }`}>
                       {s.title}
                     </span>
                   </button>
                   {i < stepLabels.length - 1 && (
-                    <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${
-                      formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
-                    }`} />
+                    <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
+                      }`} />
                   )}
                 </div>
               ))}
@@ -605,34 +808,22 @@ export default function AdminLocations() {
           </div>
 
           <form onSubmit={handleSubmit} className="px-6 sm:px-8 pb-6">
-            
+
             {/* Step 1: Info Utama */}
             {formStep === 1 && (
               <div className="space-y-4 animate-in fade-in duration-200">
                 <p className="text-xs text-slate-400 font-normal">Tentukan identitas dasar, kategori, dan deskripsi destinasi.</p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FieldGroup label="Nama Destinasi (Indonesia)">
-                    <Input 
-                      value={nameId} 
-                      onChange={(e) => setNameId(e.target.value)} 
-                      placeholder="contoh: Setu Babakan Jagakarsa" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !nameId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Nama Destinasi (Inggris)">
-                    <Input 
-                      value={nameEn} 
-                      onChange={(e) => setNameEn(e.target.value)} 
-                      placeholder="contoh: Setu Babakan Village" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !nameEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FieldGroup label="Nama Destinasi (Indonesia)">
+                    <Input
+                      value={nameId}
+                      onChange={(e) => setNameId(e.target.value)}
+                      placeholder="contoh: Setu Babakan Jagakarsa"
+                      required
+                      className={`${inputClass} ${wasValidated && !nameId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    />
+                  </FieldGroup>
                   <FieldGroup label="Kategori Wisata">
                     <select value={category} onChange={(e) => setCategory(e.target.value)} className={selectClass}>
                       {categories.map((cat) => (
@@ -640,6 +831,9 @@ export default function AdminLocations() {
                       ))}
                     </select>
                   </FieldGroup>
+                </div>
+
+                <div id="foto-upload-group" className="flex flex-col space-y-2">
                   <FieldGroup label="Upload Foto Destinasi" hint="Unggah gambar daya tarik destinasi">
                     <div className="relative">
                       <Input type="file" accept="image/*" onChange={handleUploadImage} disabled={uploading}
@@ -648,27 +842,51 @@ export default function AdminLocations() {
                       {uploading && <Loader2 className="absolute right-3 top-3 h-4 w-4 text-emerald-500 animate-spin" />}
                     </div>
                   </FieldGroup>
+                  {imageUrl && (
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 w-full group">
+                      <img
+                        src={imageUrl}
+                        alt="Pratinjau Destinasi"
+                        className="h-32 w-full object-cover select-none cursor-zoom-in hover:opacity-90 transition-opacity"
+                        onClick={() => setPreviewImageUrl(imageUrl)}
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity duration-200 pointer-events-none">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewImageUrl(imageUrl);
+                          }}
+                          className="h-8 px-3 text-[10px] font-bold bg-white/95 text-slate-800 hover:bg-white rounded-lg shadow-sm cursor-pointer pointer-events-auto"
+                        >
+                          Lihat Penuh 🔍
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImageUrl("");
+                          }}
+                          className="h-8 px-3 text-[10px] font-bold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-sm cursor-pointer pointer-events-auto"
+                        >
+                          Hapus Foto
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
                   <FieldGroup label="Deskripsi (Indonesia)">
-                    <textarea 
-                      value={descId} 
-                      onChange={(e) => setDescId(e.target.value)} 
-                      placeholder="Tuliskan cerita singkat destinasi..." 
-                      required 
-                      rows={4} 
-                      className={`${textareaClass} ${wasValidated && !descId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Deskripsi (Inggris)">
-                    <textarea 
-                      value={descEn} 
-                      onChange={(e) => setDescEn(e.target.value)} 
-                      placeholder="Write an appealing description..." 
-                      required 
-                      rows={4} 
-                      className={`${textareaClass} ${wasValidated && !descEn.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    <textarea
+                      value={descId}
+                      onChange={(e) => setDescId(e.target.value)}
+                      placeholder="Tuliskan cerita singkat destinasi..."
+                      required
+                      rows={4}
+                      className={`${textareaClass} ${wasValidated && !descId.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                 </div>
@@ -678,9 +896,9 @@ export default function AdminLocations() {
             {/* Step 2: Peta & Media */}
             {formStep === 2 && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                
+
                 {/* Geocoding Address Search */}
-                <div className="space-y-2">
+                <div id="map-search-group" className="space-y-2">
                   <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Cari Lokasi / Alamat di Peta</label>
                   <div className="flex gap-2">
                     <Input
@@ -690,8 +908,8 @@ export default function AdminLocations() {
                       className="flex-1 h-10 text-sm border-slate-200 bg-white text-slate-800 rounded-xl"
                       onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                     />
-                    <Button 
-                      type="button" 
+                    <Button
+                      type="button"
                       onClick={handleMapSearch}
                       disabled={mapSearching}
                       className="h-10 px-4 text-xs font-semibold bg-slate-800 text-white rounded-xl flex items-center gap-1.5 shrink-0"
@@ -705,7 +923,7 @@ export default function AdminLocations() {
                 <p className="text-[10px] text-slate-400 font-normal">Klik pada peta atau geser penanda merah. Alamat rinci akan terisi secara otomatis.</p>
 
                 {/* Leaflet Interactive Selector Map */}
-                <div className="h-[220px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative z-10">
+                <div id="map-container-group" className="h-[220px] w-full rounded-2xl overflow-hidden border border-slate-200 shadow-inner relative z-10">
                   <MapContainer
                     center={mapCenterPosition}
                     zoom={13}
@@ -724,50 +942,66 @@ export default function AdminLocations() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   <FieldGroup label="Latitude (Google Maps)" hint="Terisi otomatis setelah memilih di peta">
-                    <Input 
-                      value={latitude} 
-                      onChange={(e) => setLatitude(e.target.value)} 
-                      placeholder="contoh: -6.3407" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !latitude ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    <Input
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                      placeholder="contoh: -6.3407"
+                      required
+                      className={`${inputClass} ${wasValidated && !latitude ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                   <FieldGroup label="Longitude (Google Maps)" hint="Terisi otomatis setelah memilih di peta">
-                    <Input 
-                      value={longitude} 
-                      onChange={(e) => setLongitude(e.target.value)} 
-                      placeholder="contoh: 106.8274" 
-                      required 
-                      className={`${inputClass} ${wasValidated && !longitude ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+                    <Input
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                      placeholder="contoh: 106.8274"
+                      required
+                      className={`${inputClass} ${wasValidated && !longitude ? "border-red-500 focus-visible:ring-red-500" : ""}`}
                     />
                   </FieldGroup>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="w-full">
                   <FieldGroup label="Alamat Rinci (Indonesia)" hint="Terisi otomatis dari penanda peta">
-                    <textarea 
-                      value={addressId} 
-                      onChange={(e) => setAddressId(e.target.value)} 
-                      placeholder="contoh: Jl. Moch. Kahfi II, Jagakarsa" 
-                      rows={2} 
-                      className={textareaClass} 
-                    />
-                  </FieldGroup>
-                  <FieldGroup label="Alamat Rinci (Inggris)" hint="Terisi otomatis dari penanda peta">
-                    <textarea 
-                      value={addressEn} 
-                      onChange={(e) => setAddressEn(e.target.value)} 
-                      placeholder="contoh: Moch. Kahfi II Street, Jagakarsa" 
-                      rows={2} 
-                      className={textareaClass} 
+                    <textarea
+                      value={addressId}
+                      onChange={(e) => setAddressId(e.target.value)}
+                      placeholder="contoh: Jl. Moch. Kahfi II, Jagakarsa"
+                      rows={2}
+                      className={textareaClass}
                     />
                   </FieldGroup>
                 </div>
 
                 {imageUrl && (
-                  <div className="mt-4">
-                    <label className="block text-[11px] font-semibold text-slate-600 mb-1.5 uppercase">Preview Foto</label>
-                    <img src={imageUrl} alt="Preview" className="h-36 w-full object-cover rounded-xl border border-slate-200" />
+                  <div className="mt-4 space-y-2">
+                    <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">Preview Foto Destinasi</label>
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 w-full">
+                      <img
+                        src={imageUrl}
+                        alt="Pratinjau Destinasi"
+                        className="h-36 w-full object-cover select-none cursor-zoom-in hover:opacity-95 transition-opacity"
+                        onClick={() => setPreviewImageUrl(imageUrl)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setPreviewImageUrl(imageUrl)}
+                        className="h-9 px-4 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 bg-white rounded-xl flex-1 cursor-pointer"
+                      >
+                        Lihat Penuh 🔍
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => setImageUrl("")}
+                        className="h-9 px-4 text-xs font-bold bg-red-600 hover:bg-red-500 text-white rounded-xl flex-1 cursor-pointer"
+                      >
+                        Hapus Foto
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -791,11 +1025,11 @@ export default function AdminLocations() {
                   Batal
                 </Button>
                 {formStep < 2 && (
-                  <Button 
+                  <Button
                     key="btn-next"
-                    type="button" 
+                    type="button"
                     onClick={() => {
-                      if (!nameId.trim() || !nameEn.trim() || !descId.trim() || !descEn.trim()) {
+                      if (!nameId.trim() || !descId.trim()) {
                         setWasValidated(true);
                         toast.error("Harap lengkapi semua kolom wajib!");
                         return;
@@ -808,9 +1042,9 @@ export default function AdminLocations() {
                   </Button>
                 )}
                 {formStep === 2 && (
-                  <Button 
+                  <Button
                     key="btn-submit"
-                    type="submit" 
+                    type="submit"
                     disabled={uploading}
                     className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm rounded-xl"
                   >
@@ -826,18 +1060,18 @@ export default function AdminLocations() {
 
       {/* Premium Lightbox Overlay */}
       {previewImageUrl && (
-        <div 
+        <div
           onClick={() => setPreviewImageUrl(null)}
           className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out animate-in fade-in duration-200"
         >
           <div className="relative max-w-5xl max-h-[90vh]">
-            <img 
-              src={previewImageUrl} 
-              alt="Pratinjau Lokasi" 
-              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none animate-in zoom-in-95 duration-200" 
+            <img
+              src={previewImageUrl}
+              alt="Pratinjau Lokasi"
+              className="max-h-[85vh] max-w-full object-contain rounded-2xl shadow-2xl border border-white/10 select-none animate-in zoom-in-95 duration-200"
               onClick={(e) => e.stopPropagation()}
             />
-            <button 
+            <button
               onClick={() => setPreviewImageUrl(null)}
               className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/80 transition-all shadow-md text-lg font-bold"
             >
@@ -859,15 +1093,15 @@ export default function AdminLocations() {
             </p>
           </div>
           <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 mt-2 justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setDeleteConfirmId(null)}
               className="h-9 px-4 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
             >
               Batal
             </Button>
-            <Button 
+            <Button
               type="button"
               onClick={() => {
                 if (deleteConfirmId) {
@@ -882,6 +1116,74 @@ export default function AdminLocations() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Feature Tour Overlay Modal */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Dark backdrop mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

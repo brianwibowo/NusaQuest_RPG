@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { ShieldAlert, ShieldCheck, User, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShieldAlert, ShieldCheck, User, Search, ChevronLeft, ChevronRight, HelpCircle, X, ChevronDown } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 
 interface ProfileItem {
@@ -31,6 +31,93 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Feature Onboarding Tour States
+  const [tourActiveStep, setTourActiveStep] = useState<number | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+
+  const tourSteps = [
+    {
+      title: "Selamat Datang di Manajemen Pengguna! 👥",
+      content: "Tur singkat ini akan memandu Anda secara interaktif memahami fitur-fitur utama di halaman Manajemen Pengguna. Klik 'Selanjutnya' untuk memulai!",
+      selector: null
+    },
+    {
+      title: "Pencarian & Filter Otorisasi 🔍",
+      content: "Gunakan panel filter ini untuk memotong list pengguna: ketik nama/email untuk pencarian cepat atau pilih level otorisasi (Super Admin, Admin, Pemain) untuk menyaring data.",
+      selector: "#filter-bar"
+    },
+    {
+      title: "Daftar Pengguna & Progress RPG 📊",
+      content: "Seluruh pengguna terdaftar ditampilkan di sini beserta progres level game dan total poin RPG yang telah mereka kumpulkan.",
+      selector: "#users-table"
+    },
+    {
+      title: "Aksi Hak Akses 🔑",
+      content: "Khusus untuk Super Admin, Anda dapat memberikan atau mencabut akses Admin kepada pengguna lain secara langsung lewat kolom aksi.",
+      selector: "#users-table"
+    },
+    {
+      title: "Tur Selesai! 🎉",
+      content: "Sekarang Anda siap mengelola pengguna NusaQuest dengan aman. Selamat bekerja!",
+      selector: null
+    }
+  ];
+
+  useEffect(() => {
+    // Remove previous highlighted class
+    const prevHighlighted = document.querySelectorAll(".tour-highlighted");
+    prevHighlighted.forEach(el => el.classList.remove("tour-highlighted"));
+
+    if (tourActiveStep === null) {
+      return;
+    }
+
+    const step = tourSteps[tourActiveStep];
+
+    const timer = setTimeout(() => {
+      if (step.selector) {
+        const element = document.querySelector(step.selector);
+        if (element) {
+          element.classList.add("tour-highlighted");
+          const rect = element.getBoundingClientRect();
+
+          const showAbove = rect.bottom + 260 > window.innerHeight;
+          const topPos = showAbove
+            ? rect.top - 245 + window.scrollY
+            : rect.bottom + 12 + window.scrollY;
+
+          setTooltipStyle({
+            position: "absolute",
+            top: `${topPos}px`,
+            left: `${Math.max(16, Math.min(window.innerWidth - 380, rect.left + window.scrollX))}px`,
+            zIndex: 9999,
+            width: "350px",
+            transition: "all 0.3s ease-in-out"
+          });
+
+          element.scrollIntoView({ block: "center", behavior: "smooth" });
+          return;
+        }
+      }
+
+      setTooltipStyle({
+        position: "fixed",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: 9999,
+        width: "350px",
+        transition: "all 0.3s ease-in-out"
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      const highlighted = document.querySelectorAll(".tour-highlighted");
+      highlighted.forEach(el => el.classList.remove("tour-highlighted"));
+    };
+  }, [tourActiveStep]);
 
   const fetchUsers = () => {
     setLoading(true);
@@ -125,36 +212,67 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
+      <style>{`
+        .tour-highlighted {
+          position: relative !important;
+          z-index: 9999 !important;
+          background-color: white !important;
+          box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important;
+          pointer-events: none !important;
+          animation: tour-pulse 2.2s infinite !important;
+          border-radius: 12px;
+        }
+        @keyframes tour-pulse {
+          0% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+          50% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45) !important; }
+          100% { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6) !important; }
+        }
+      `}</style>
+
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-black text-slate-800 tracking-tight">Manajemen Pengguna</h2>
-        <p className="text-xs text-slate-400 mt-0.5 font-normal">
-          <span className="text-emerald-600 font-semibold">Super Admin:</span>
-          {" "}Hanya Super Admin yang dapat menunjuk atau mencabut otorisasi Admin lainnya.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h2 className="text-xl font-black text-slate-800 tracking-tight">Manajemen Pengguna</h2>
+          <p className="text-xs text-slate-400 mt-0.5 font-normal">
+            <span className="text-emerald-600 font-semibold">Super Admin:</span>
+            {" "}Hanya Super Admin yang dapat menunjuk atau mencabut otorisasi Admin lainnya.
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => setTourActiveStep(0)}
+          variant="outline"
+          className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer shrink-0 self-end sm:self-auto"
+          title="Mulai Tur Fitur"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Filter Bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+      <div id="filter-bar" className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
         <div className="relative sm:col-span-2">
           <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari nama atau email..."
-            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-xl"
+            className="h-10 pl-9 text-xs border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal placeholder:text-slate-400 rounded-full"
           />
         </div>
-        <select
-          value={filterRole}
-          onChange={(e) => setFilterRole(e.target.value)}
-          className="h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all"
-        >
-          <option value="">Semua Otorisasi</option>
-          <option value="super_admin">Super Admin</option>
-          <option value="admin">Admin</option>
-          <option value="user">Pemain (User)</option>
-        </select>
+        <div className="relative">
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className="w-full h-10 pl-4 pr-10 rounded-full border border-slate-200 bg-white text-slate-700 text-xs focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all cursor-pointer appearance-none"
+          >
+            <option value="">Semua Otorisasi</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="user">Pemain (User)</option>
+          </select>
+          <ChevronDown className="absolute right-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       <p className="text-[11px] text-slate-400 font-normal px-1">
@@ -207,12 +325,33 @@ export default function AdminUsers() {
           </div>
         </div>
       ) : paginatedUsers.length === 0 ? (
-        <div className="py-20 text-center text-slate-400 text-sm font-normal">
-          Belum ada pengguna yang sesuai.
+        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
+            <User className="h-7 w-7 text-slate-400" />
+          </div>
+          <div className="space-y-1.5 max-w-xs">
+            <h3 className="text-sm font-bold text-slate-800">Pengguna Tidak Ditemukan</h3>
+            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+              Tidak ada pengguna yang cocok dengan kata kunci pencarian atau filter otorisasi Anda.
+            </p>
+          </div>
+          {(searchQuery || filterRole) && (
+            <Button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterRole("");
+              }}
+              variant="outline"
+              className="h-9 px-4 text-xs font-semibold border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 bg-white rounded-full transition-all cursor-pointer shadow-xs"
+            >
+              Reset Filter & Pencarian
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
+          <div id="users-table" className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-xs font-normal">
                 <thead>
@@ -265,7 +404,7 @@ export default function AdminUsers() {
           </div>
 
           {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {filteredUsers.length > 0 && (
             <div className="flex items-center justify-center gap-2 pt-2">
               <Button variant="outline" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}
                 className="h-9 text-xs font-semibold border-slate-200 text-slate-600 hover:bg-slate-50 bg-white flex items-center gap-1 rounded-xl"
@@ -297,6 +436,75 @@ export default function AdminUsers() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Feature Tour Tooltip Overlay */}
+      {tourActiveStep !== null && (
+        <>
+          {/* Backdrop screen mask */}
+          <div
+            onClick={() => setTourActiveStep(null)}
+            className="fixed inset-0 bg-black/60 z-[9998] backdrop-blur-xs animate-in fade-in duration-200 cursor-pointer"
+          />
+          {/* Floating guide card positioned next to highlighted element */}
+          <div
+            style={tooltipStyle}
+            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+          >
+            {/* Header / Step counter */}
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTourActiveStep(null)}
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                title="Tutup Tur"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Title & Content */}
+            <div className="space-y-2">
+              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={tourActiveStep === 0}
+                onClick={() => setTourActiveStep(prev => prev! - 1)}
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+              >
+                Sebelumnya
+              </Button>
+              <div className="flex gap-2">
+                {tourActiveStep < tourSteps.length - 1 ? (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(prev => prev! + 1)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selanjutnya
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => setTourActiveStep(null)}
+                    className="h-8 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-sm cursor-pointer"
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

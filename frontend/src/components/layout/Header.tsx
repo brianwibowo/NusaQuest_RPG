@@ -40,10 +40,11 @@ export default function Header() {
   };
 
   const handleLogout = () => {
-    audioManager.playClick();
-    hapticsManager.triggerClick();
-    signOut();
-    dispatch({ type: "RESET_GAME" });
+    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+      audioManager.playClick();
+      hapticsManager.triggerClick();
+      signOut();
+    }
   };
 
   const menuItems = [

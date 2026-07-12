@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import { authMiddleware, requireAdmin, JWTPayload } from "../middleware/auth";
 import { QuestType, QuestDifficulty, ObjectiveType } from "@prisma/client";
 import { mapQuest } from "../lib/mappers";
+import { translateToEnglish } from "../lib/translate";
 
 type Env = {
   Variables: {
@@ -58,6 +59,7 @@ questRoutes.get("/:id", async (c) => {
     return c.json({ error: "Failed to fetch quest: " + err.message }, 500);
   }
 });
+
 questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
   try {
     const body = await c.req.json();
@@ -82,8 +84,8 @@ questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
     } = body;
 
     // Validasi field wajib
-    if (!titleId || !titleEn || !descId || !descEn || !type || !difficulty || !locationId) {
-      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, descId, descEn, type, difficulty, locationId" }, 400);
+    if (!titleId || !descId || !type || !difficulty || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, descId, type, difficulty, locationId" }, 400);
     }
 
     if (id) {
@@ -91,19 +93,34 @@ questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
       if (existing) return c.json({ error: "Misi dengan ID tersebut sudah ada" }, 409);
     }
 
+    const resolvedTitleEn = titleEn || await translateToEnglish(titleId);
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
+    const resolvedEstimatedTimeEn = estimatedTimeEn || (estimatedTimeId ? await translateToEnglish(estimatedTimeId) : null);
+
+    const resolvedObjectives = objectives
+      ? await Promise.all(
+          objectives.map(async (obj: any, idx: number) => ({
+            descId: obj.descId,
+            descEn: obj.descEn || await translateToEnglish(obj.descId),
+            type: obj.type as ObjectiveType,
+            sortOrder: obj.sortOrder !== undefined ? parseInt(obj.sortOrder) : idx,
+          }))
+        )
+      : undefined;
+
     const newQuest = await prisma.quest.create({
       data: {
         id: id || undefined,
         titleId,
-        titleEn,
+        titleEn: resolvedTitleEn,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         type: type as QuestType,
         difficulty: difficulty as QuestDifficulty,
         requiredLevel: requiredLevel ? parseInt(requiredLevel) : 1,
         availableLevels: availableLevels ? availableLevels.map((l: any) => parseInt(l)) : [1],
         estimatedTimeId,
-        estimatedTimeEn,
+        estimatedTimeEn: resolvedEstimatedTimeEn,
         imageUrl,
         locationId,
         relatedUmkmId,
@@ -117,13 +134,8 @@ questRoutes.post("/", authMiddleware, requireAdmin, async (c) => {
             storyUnlockId: reward.storyUnlockId || null,
           }
         } : undefined,
-        objectives: objectives ? {
-          create: objectives.map((obj: any, idx: number) => ({
-            descId: obj.descId,
-            descEn: obj.descEn,
-            type: obj.type as ObjectiveType,
-            sortOrder: obj.sortOrder !== undefined ? parseInt(obj.sortOrder) : idx,
-          }))
+        objectives: resolvedObjectives ? {
+          create: resolvedObjectives
         } : undefined
       },
       include: {
@@ -170,27 +182,42 @@ questRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
     } = body;
 
     // Validasi field wajib
-    if (!titleId || !titleEn || !descId || !descEn || !type || !difficulty || !locationId) {
-      return c.json({ error: "Field wajib belum lengkap: titleId, titleEn, descId, descEn, type, difficulty, locationId" }, 400);
+    if (!titleId || !descId || !type || !difficulty || !locationId) {
+      return c.json({ error: "Field wajib belum lengkap: titleId, descId, type, difficulty, locationId" }, 400);
     }
 
     if (objectives) {
       await prisma.questObjective.deleteMany({ where: { questId: id } });
     }
 
+    const resolvedTitleEn = titleEn || await translateToEnglish(titleId);
+    const resolvedDescEn = descEn || await translateToEnglish(descId);
+    const resolvedEstimatedTimeEn = estimatedTimeEn || (estimatedTimeId ? await translateToEnglish(estimatedTimeId) : null);
+
+    const resolvedObjectives = objectives
+      ? await Promise.all(
+          objectives.map(async (obj: any, idx: number) => ({
+            descId: obj.descId,
+            descEn: obj.descEn || await translateToEnglish(obj.descId),
+            type: obj.type as ObjectiveType,
+            sortOrder: obj.sortOrder !== undefined ? parseInt(obj.sortOrder) : idx,
+          }))
+        )
+      : undefined;
+
     const updatedQuest = await prisma.quest.update({
       where: { id },
       data: {
         titleId,
-        titleEn,
+        titleEn: resolvedTitleEn,
         descId,
-        descEn,
+        descEn: resolvedDescEn,
         type: type as QuestType,
         difficulty: difficulty as QuestDifficulty,
         requiredLevel: requiredLevel ? parseInt(requiredLevel) : 1,
         availableLevels: availableLevels ? availableLevels.map((l: any) => parseInt(l)) : [1],
         estimatedTimeId,
-        estimatedTimeEn,
+        estimatedTimeEn: resolvedEstimatedTimeEn,
         imageUrl,
         locationId,
         relatedUmkmId,
@@ -214,13 +241,8 @@ questRoutes.put("/:id", authMiddleware, requireAdmin, async (c) => {
             }
           }
         } : undefined,
-        objectives: objectives ? {
-          create: objectives.map((obj: any, idx: number) => ({
-            descId: obj.descId,
-            descEn: obj.descEn,
-            type: obj.type as ObjectiveType,
-            sortOrder: obj.sortOrder !== undefined ? parseInt(obj.sortOrder) : idx,
-          }))
+        objectives: resolvedObjectives ? {
+          create: resolvedObjectives
         } : undefined
       },
       include: {

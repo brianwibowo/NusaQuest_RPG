@@ -35,16 +35,34 @@ import AdminUmkm from "@/pages/admin/AdminUmkm";
 import AdminSongs from "@/pages/admin/AdminSongs";
 import AdminUsers from "@/pages/admin/AdminUsers";
 
-// Guard: redirect to onboarding if not completed
+// Guard: redirect to onboarding if not completed (waits for async loading)
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
-  const { player } = usePlayer();
+  const { player, isPlayerLoading } = usePlayer();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
+  // Wait for auth and player data to finish loading before deciding
+  if (isAuthLoading || (isAuthenticated && isPlayerLoading)) {
+    return (
+      <div className="min-h-screen bg-[#F8F7F4] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          <span className="text-xs font-semibold text-slate-500">Memuat data...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (!player.hasCompletedOnboarding) {
     return <Navigate to="/onboarding" replace />;
   }
   return <>{children}</>;
 }
 
-// Guard: redirect to home if not admin
+// Guard: redirect to onboarding if not admin
 function RequireAdmin({ children }: { children: React.ReactNode }) {
   const { isAdmin, isLoading } = useAuth();
   if (isLoading) {
@@ -55,7 +73,7 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
     );
   }
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
   return <>{children}</>;
 }
