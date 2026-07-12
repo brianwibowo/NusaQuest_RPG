@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
-import { Edit2, Trash2, Sword } from "lucide-react";
+import { Edit2, Trash2, Sword, Eye } from "lucide-react";
 import type { QuestItem } from "./questTypes";
 import { getTypeLabel, getTypeColor, getDifficultyLabel, getDifficultyColor } from "./questTypes";
 
@@ -9,20 +9,24 @@ interface QuestCardProps {
   quest: QuestItem;
   onEdit: (quest: QuestItem) => void;
   onDelete: (id: string) => void;
+  onView: (quest: QuestItem) => void;
 }
 
-export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps) {
-  const isEco = q.type === "eco";
+export default function QuestCard({ quest: q, onEdit, onDelete, onView }: QuestCardProps) {
   const [imageError, setImageError] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   return (
-    <div className="border border-slate-200/80 bg-white overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
-      {isEco && (
-        <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[7px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-md shadow-md z-20">
-          Eco
-        </span>
-      )}
+    <div className="border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 relative group rounded-2xl">
+      {/* View Detail button */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onView(q); }}
+        className="absolute top-3 right-3 z-30 p-2 bg-white/95 dark:bg-slate-800 hover:bg-emerald-600 text-slate-600 dark:text-slate-300 hover:text-white rounded-full shadow-md border border-slate-100/50 dark:border-slate-700/50 hover:border-emerald-600 hover:scale-105 transition-all duration-200 cursor-pointer"
+        title="Lihat Detail Selengkapnya"
+      >
+        <Eye className="h-3.5 w-3.5" />
+      </button>
 
       <div>
         {/* Image */}
@@ -53,18 +57,18 @@ export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps
         {/* Content */}
         <CardContent className="p-4 sm:p-5 space-y-2.5">
           <div>
-            <h3 className="text-sm font-bold text-slate-800 leading-tight">{q.titleId}</h3>
-            <span className="text-[10px] text-slate-400 block mt-0.5 font-normal">{q.titleEn}</span>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{q.titleId}</h3>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5 font-normal">{q.titleEn}</span>
           </div>
-          <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 font-normal">
+          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2 font-normal">
             {q.descId}
           </p>
           {/* Meta tags */}
-          <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2">
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2">
             <MetaTag>Lvl {q.requiredLevel}</MetaTag>
             <MetaTag className={getDifficultyColor(q.difficulty)}>{getDifficultyLabel(q.difficulty)}</MetaTag>
             <MetaTag>{q.objectives?.length || 0} tugas</MetaTag>
-            <MetaTag className="text-emerald-600 font-semibold">{q.reward?.xp || 0} XP</MetaTag>
+            <MetaTag className="text-emerald-600 dark:text-emerald-450 font-semibold">{q.reward?.xp || 0} XP</MetaTag>
           </div>
         </CardContent>
       </div>
@@ -74,7 +78,7 @@ export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps
         <Button
           onClick={() => onEdit(q)}
           variant="outline"
-          className="flex-1 h-9 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 bg-white rounded-lg"
+          className="flex-1 h-9 text-xs font-semibold text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 flex items-center gap-1.5 bg-white dark:bg-slate-900 rounded-lg"
         >
           <Edit2 className="h-3.5 w-3.5" />
           <span>Ubah</span>
@@ -82,7 +86,7 @@ export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps
         <Button
           onClick={() => onDelete(q.id)}
           variant="ghost"
-          className="flex-1 h-9 text-xs font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-1.5 rounded-lg"
+          className="flex-1 h-9 text-xs font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-1.5 rounded-lg"
         >
           <Trash2 className="h-3.5 w-3.5" />
           <span>Hapus</span>
@@ -118,7 +122,7 @@ export default function QuestCard({ quest: q, onEdit, onDelete }: QuestCardProps
 // ── Inline helper ──
 function MetaTag({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <span className={`text-[9px] uppercase tracking-wider font-normal text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md ${className}`}>
+    <span className={`text-[9px] uppercase tracking-wider font-normal text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded-md ${className}`}>
       {children}
     </span>
   );

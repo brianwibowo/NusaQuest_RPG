@@ -97,6 +97,26 @@ export const STEP_LABELS = [
   { num: 3, title: "Hadiah & Bonus" },
 ];
 
+export const REWARD_BADGES = [
+  { value: "badge_history_buff", label: "Pelestari Sejarah" },
+  { value: "badge_culture_keeper", label: "Penjaga Budaya" },
+  { value: "badge_independence", label: "Pejuang Kemerdekaan" },
+  { value: "badge_eco_warrior", label: "Pahlawan Ekologi" },
+  { value: "badge_mangrove_hero", label: "Penyelamat Hutan Bakau" },
+  { value: "badge_nusantara_explorer", label: "Penjelajah Nusantara" },
+  { value: "badge_green_guardian", label: "Penjaga Bumi Hijau" },
+];
+
+export const REWARD_VOUCHERS = [
+  { value: "voucher_kerak_telor", label: "Diskon Kerak Telor Mpok Ipah (10%)" },
+  { value: "voucher_bakmi", label: "Diskon Bakmi Kota Tua (15%)" },
+];
+
+export const REWARD_COLLECTIBLES = [
+  { value: "collectible_kota_tua_frame", label: "Bingkai Foto Profil 'Kota Tua'" },
+  { value: "collectible_peta_nusantara", label: "Bingkai Foto Profil 'Peta Nusantara'" },
+];
+
 // ── Helpers ──
 
 export const getTypeLabel = (val: string) =>

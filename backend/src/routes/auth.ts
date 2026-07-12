@@ -144,4 +144,39 @@ authRoutes.get("/me", authMiddleware, async (c) => {
   }
 });
 
+authRoutes.put("/profile", authMiddleware, async (c) => {
+  const jwtUser = c.get("user");
+  const body = await c.req.json();
+  const { name, avatarUrl } = body;
+
+  if (!name || typeof name !== "string" || !name.trim()) {
+    return c.json({ error: "Nama tidak boleh kosong" }, 400);
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: jwtUser.userId },
+      data: {
+        name: name.trim(),
+        avatarUrl: avatarUrl || null,
+      },
+      include: { profile: true },
+    });
+
+    return c.json({
+      message: "Profil berhasil diperbarui",
+      user: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        avatarUrl: updatedUser.avatarUrl,
+        role: updatedUser.role,
+        profile: updatedUser.profile,
+      },
+    });
+  } catch (err: any) {
+    return c.json({ error: "Gagal memperbarui profil: " + err.message }, 500);
+  }
+});
+
 export default authRoutes;

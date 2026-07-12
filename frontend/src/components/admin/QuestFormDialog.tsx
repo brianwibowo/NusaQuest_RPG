@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, X, PlusCircle, ChevronLeft, ChevronRight, Check, ArrowUp, ArrowDown, Compass } from "lucide-react";
+import { Loader2, X, PlusCircle, ChevronLeft, ChevronRight, Check, ArrowUp, ArrowDown, Compass, HelpCircle } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "./FieldGroup";
 import type {
@@ -11,6 +11,7 @@ import type {
 } from "./questTypes";
 import {
   QUEST_TYPES, DIFFICULTIES, OBJECTIVE_TYPES, STEP_LABELS,
+  REWARD_BADGES, REWARD_VOUCHERS, REWARD_COLLECTIBLES,
 } from "./questTypes";
 
 interface QuestFormDialogProps {
@@ -57,6 +58,7 @@ export default function QuestFormDialog({
 
   const [isDirty, setIsDirty] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // Reset form when dialog opens
   const handleOpenChange = (nextOpen: boolean) => {
@@ -214,7 +216,7 @@ export default function QuestFormDialog({
 
     const targetIndex = direction === "up" ? index - 1 : index + 1;
     const updated = [...objectives];
-    
+
     // Swap elements
     const temp = updated[index];
     updated[index] = updated[targetIndex];
@@ -378,15 +380,16 @@ export default function QuestFormDialog({
   };
 
   // ── Shared input classes ──
-  const inputClass = "h-10 text-sm border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
-  const selectClass = "w-full h-10 px-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all";
-  const textareaClass = "w-full p-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm font-normal focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none resize-none transition-all";
+  const inputClass = "h-10 text-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-white focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
+  const selectClass = "w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-white text-sm focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none font-normal transition-all";
+  const textareaClass = "w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-white text-sm font-normal focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 focus:outline-none resize-none transition-all";
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="bg-white border border-slate-200/80 text-slate-800 max-w-3xl overflow-y-auto max-h-[92vh] rounded-2xl shadow-2xl p-0 gap-0">
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white w-[92%] sm:max-w-xl overflow-y-auto max-h-[92vh] rounded-2xl shadow-2xl p-0 gap-0">
         <DialogHeader className="px-6 sm:px-8 pt-6 pb-0">
-          <DialogTitle className="text-lg font-black text-slate-800 tracking-tight">
+          <DialogTitle className="text-lg font-black text-slate-800 dark:text-white tracking-tight">
             {editingItem ? "Ubah Misi" : "Tambah Misi Baru"}
           </DialogTitle>
         </DialogHeader>
@@ -399,29 +402,25 @@ export default function QuestFormDialog({
                 <button
                   type="button"
                   onClick={() => handleStepClick(s.num)}
-                  className={`flex items-center gap-2 transition-all ${
-                    formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
-                  }`}
+                  className={`flex items-center gap-2 transition-all ${formStep === s.num ? "opacity-100" : formStep > s.num ? "opacity-70" : "opacity-30"
+                    }`}
                 >
-                  <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${
-                    formStep > s.num
-                      ? "bg-emerald-600 text-white"
-                      : formStep === s.num
-                      ? "bg-emerald-600 text-white ring-[3px] ring-emerald-100"
-                      : "bg-slate-100 text-slate-400"
-                  }`}>
+                  <span className={`flex items-center justify-center h-8 w-8 rounded-full text-xs font-bold transition-all ${formStep > s.num
+                    ? "bg-emerald-600 text-white"
+                    : formStep === s.num
+                      ? "bg-emerald-600 text-white ring-[3px] ring-emerald-100 dark:ring-emerald-900/50"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
+                    }`}>
                     {formStep > s.num ? <Check className="h-4 w-4" /> : s.num}
                   </span>
-                  <span className={`text-xs hidden sm:inline ${
-                    formStep === s.num ? "font-bold text-slate-800" : "font-normal text-slate-400"
-                  }`}>
+                  <span className={`text-xs hidden sm:inline ${formStep === s.num ? "font-bold text-slate-800 dark:text-white" : "font-normal text-slate-400 dark:text-slate-500"
+                    }`}>
                     {s.title}
                   </span>
                 </button>
                 {i < STEP_LABELS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${
-                    formStep > s.num ? "bg-emerald-400" : "bg-slate-100"
-                  }`} />
+                  <div className={`flex-1 h-0.5 mx-3 rounded-full transition-all ${formStep > s.num ? "bg-emerald-400" : "bg-slate-100 dark:bg-slate-800"
+                    }`} />
                 )}
               </div>
             ))}
@@ -433,11 +432,21 @@ export default function QuestFormDialog({
           {/* ═══ STEP 1: Informasi Dasar ═══ */}
           {formStep === 1 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Tentukan identitas, kategori, dan deskripsi petualangan misi.</p>
-              
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-slate-400 font-normal">Tentukan identitas, kategori, dan deskripsi petualangan misi.</p>
+                <button
+                  type="button"
+                  onClick={() => setHelpOpen(true)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors shrink-0 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 cursor-pointer"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  <span>Bantuan</span>
+                </button>
+              </div>
+
               {/* ── Identitas Misi ── */}
-              <div className="bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80 space-y-4">
-                <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">🏷️ Identitas Misi</h4>
+              <div className="bg-slate-50/70 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4">
+                <h4 className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">🏷️ Identitas Misi</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FieldGroup label="Judul Misi" hint="Nama misi yang tampil di aplikasi penjelajah" required>
                     <Input value={titleId} onChange={(e) => {
@@ -504,7 +513,7 @@ export default function QuestFormDialog({
               </div>
 
               {/* ── Foto Sampul (Full Width) ── */}
-              <FieldGroup label="Foto Sampul Misi" hint="Unggah gambar ilustrasi misi (format: JPG, PNG, HEIC)">
+              <FieldGroup label="Foto Sampul Misi" hint="Unggah gambar ilustrasi misi (format: JPG, PNG, HEIC) maks 2 MB">
                 <div className="relative">
                   <Input type="file" accept="image/*" onChange={(e) => { handleUploadImage(e); setIsDirty(true); }} disabled={uploading}
                     className="h-10 text-sm border-slate-200 bg-white text-slate-800 font-normal rounded-xl file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700"
@@ -558,13 +567,23 @@ export default function QuestFormDialog({
           {/* ═══ STEP 2: Target & Level ═══ */}
           {formStep === 2 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Tentukan siapa yang bisa bermain misi ini dan apa saja tugas yang harus diselesaikan.</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-slate-400 font-normal">Tentukan siapa yang bisa bermain misi ini dan apa saja tugas yang harus diselesaikan.</p>
+                <button
+                  type="button"
+                  onClick={() => setHelpOpen(true)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors shrink-0 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 cursor-pointer"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  <span>Bantuan</span>
+                </button>
+              </div>
 
               {/* Level Checkboxes */}
-              <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-3">
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div>
-                    <h3 className="text-xs font-black text-emerald-700 uppercase tracking-wider">Level yang Bisa Bermain</h3>
+                    <h3 className="text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Level yang Bisa Bermain</h3>
                     <p className="text-[11px] text-slate-400 font-normal mt-0.5">Centang level pemain yang diizinkan mengambil misi ini.</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
@@ -581,7 +600,7 @@ export default function QuestFormDialog({
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  {[1,2,3,4,5,6,7,8,9,10].map((lvl) => (
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((lvl) => (
                     <label key={lvl} className="flex items-center gap-2 cursor-pointer select-none bg-white px-3 py-2 rounded-xl border border-slate-200 hover:border-emerald-300 transition-colors">
                       <Checkbox
                         checked={availableLevels.includes(lvl)}
@@ -622,7 +641,7 @@ export default function QuestFormDialog({
                         >
                           <X className="h-3 w-3" />
                         </button>
-                        
+
                         <div className="flex justify-between items-center mb-3">
                           <p className="text-[11px] text-slate-500 font-semibold">Tugas #{idx + 1}</p>
                           <div className="flex items-center gap-1">
@@ -647,17 +666,21 @@ export default function QuestFormDialog({
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <FieldGroup label="Apa yang harus dilakukan?" compact required>
-                            <Input value={obj.descId} onChange={(e) => handleObjectiveChange(idx, "descId", e.target.value)}
-                              placeholder="contoh: Foto tanaman bakau yang baru ditanam" required className={`${inputClass} h-9`} />
-                          </FieldGroup>
-                          <FieldGroup label="Jenis Tugas" compact>
-                            <select value={obj.type} onChange={(e) => handleObjectiveChange(idx, "type", e.target.value)}
-                              className={`${selectClass} h-9 text-xs`}>
-                              {OBJECTIVE_TYPES.map((ot) => <option key={ot.value} value={ot.value}>{ot.label}</option>)}
-                            </select>
-                          </FieldGroup>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="sm:col-span-2">
+                            <FieldGroup label="Apa yang harus dilakukan?" compact required>
+                              <Input value={obj.descId} onChange={(e) => handleObjectiveChange(idx, "descId", e.target.value)}
+                                placeholder="contoh: Foto tanaman bakau yang baru ditanam" required className={`${inputClass} h-9`} />
+                            </FieldGroup>
+                          </div>
+                          <div className="sm:col-span-1">
+                            <FieldGroup label="Jenis Tugas" compact>
+                              <select value={obj.type} onChange={(e) => handleObjectiveChange(idx, "type", e.target.value)}
+                                className={`${selectClass} h-9 text-xs`}>
+                                {OBJECTIVE_TYPES.map((ot) => <option key={ot.value} value={ot.value}>{ot.label}</option>)}
+                              </select>
+                            </FieldGroup>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -670,7 +693,17 @@ export default function QuestFormDialog({
           {/* ═══ STEP 3: Hadiah & Kuis ═══ */}
           {formStep === 3 && (
             <div className="space-y-5 animate-in fade-in duration-200">
-              <p className="text-xs text-slate-400 font-normal">Tentukan hadiah yang didapat pemain setelah menyelesaikan misi.</p>
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-xs text-slate-400 font-normal">Tentukan hadiah yang didapat pemain setelah menyelesaikan misi.</p>
+                <button
+                  type="button"
+                  onClick={() => setHelpOpen(true)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 transition-colors shrink-0 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100 cursor-pointer"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  <span>Bantuan</span>
+                </button>
+              </div>
 
               {/* Ringkasan Misi */}
               <div className="bg-emerald-50/50 p-4 sm:p-5 rounded-2xl border border-emerald-100 space-y-3">
@@ -742,13 +775,22 @@ export default function QuestFormDialog({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <FieldGroup label="Lencana Penghargaan" hint="Opsional — nama lencana yang diberikan sebagai kenang-kenangan">
-                    <Input value={rewardBadge} onChange={(e) => { setRewardBadge(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
+                    <select value={rewardBadge} onChange={(e) => { setRewardBadge(e.target.value); setIsDirty(true); }} className={selectClass}>
+                      <option value="">Tidak ada lencana</option>
+                      {REWARD_BADGES.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+                    </select>
                   </FieldGroup>
-                  <FieldGroup label="Voucher Diskon" hint="Opsional — kode voucher belanja UMKM untuk pemain">
-                    <Input value={rewardVoucher} onChange={(e) => { setRewardVoucher(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
+                  <FieldGroup label="Voucher Diskon" hint="Opsional — diskon belanja UMKM mitra untuk pemain">
+                    <select value={rewardVoucher} onChange={(e) => { setRewardVoucher(e.target.value); setIsDirty(true); }} className={selectClass}>
+                      <option value="">Tidak ada voucher</option>
+                      {REWARD_VOUCHERS.map((v) => <option key={v.value} value={v.value}>{v.label}</option>)}
+                    </select>
                   </FieldGroup>
-                  <FieldGroup label="Bingkai Foto Profil" hint="Opsional — bingkai avatar spesial untuk koleksi pemain">
-                    <Input value={rewardCollectible} onChange={(e) => { setRewardCollectible(e.target.value); setIsDirty(true); }} placeholder="kosongkan jika tidak ada" className={inputClass} />
+                  <FieldGroup label="Bingkai Foto Profil" hint="Opsional — bingkai avatar khusus untuk menghias foto profil pemain">
+                    <select value={rewardCollectible} onChange={(e) => { setRewardCollectible(e.target.value); setIsDirty(true); }} className={selectClass}>
+                      <option value="">Tidak ada bingkai</option>
+                      {REWARD_COLLECTIBLES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
                   </FieldGroup>
                 </div>
               </div>
@@ -782,9 +824,9 @@ export default function QuestFormDialog({
                 Batal
               </Button>
               {formStep < 3 && (
-                <Button 
+                <Button
                   key="btn-next-quest"
-                  type="button" 
+                  type="button"
                   onClick={handleNextStep}
                   className="h-10 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm flex items-center gap-1 rounded-xl"
                 >
@@ -792,9 +834,9 @@ export default function QuestFormDialog({
                 </Button>
               )}
               {formStep === 3 && (
-                <Button 
+                <Button
                   key="btn-submit-quest"
-                  type="submit" 
+                  type="submit"
                   disabled={uploading}
                   className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm rounded-xl"
                 >
@@ -806,11 +848,86 @@ export default function QuestFormDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+    </Dialog>
+
+      {/* Step Help Modal */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white w-[92%] sm:max-w-md rounded-2xl shadow-xl p-6 border border-slate-200 dark:border-slate-800">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              💡 Panduan Langkah {formStep}: {STEP_LABELS[formStep - 1]?.title}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 space-y-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+            {formStep === 1 && (
+              <>
+                <div>
+                  <p className="font-bold text-slate-700">🏷️ Judul & ID Misi</p>
+                  <p className="font-normal text-slate-500">Judul misi yang menarik akan tampil langsung di aplikasi pemain. ID Misi di-generate secara otomatis sebagai kode sistem unik.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">🌍 Kategori & Destinasi</p>
+                  <p className="font-normal text-slate-500">Pilih kategori rumpun petualangan (seperti Ecowisata atau Wisata Sejarah) dan destinasi wisata tempat petualangan berlangsung.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">👥 UMKM Mitra Terkait</p>
+                  <p className="font-normal text-slate-500">Hubungkan misi dengan toko atau warung mitra lokal jika terdapat tugas berbelanja atau berkunjung.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">🛡️ Syarat Level & Durasi</p>
+                  <p className="font-normal text-slate-500">Tentukan batas level minimal pemain yang bisa mengambil misi ini, serta perkiraan waktu pengerjaan dalam menit.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">🖼️ Foto Sampul & Deskripsi</p>
+                  <p className="font-normal text-slate-500">Unggah gambar menarik (maks 2MB) dan tulis deskripsi cerita petualangan yang memikat hati pemain.</p>
+                </div>
+              </>
+            )}
+            {formStep === 2 && (
+              <>
+                <div>
+                  <p className="font-bold text-slate-700">🎮 Level yang Bisa Bermain</p>
+                  <p className="font-normal text-slate-500">Centang level karakter pemain mana saja yang diperbolehkan menerima misi ini. Anda bisa memilih semuanya dengan tombol "Pilih Semua".</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">📝 Tugas yang Harus Diselesaikan</p>
+                  <p className="font-normal text-slate-500">Daftar objektif/aktivitas wajib. Tugas-tugas spesifik yang wajib dituntaskan pemain, seperti pergi ke destinasi, menjawab kuis, atau mengambil foto. Urutan tugas dapat disusun ulang menggunakan tombol panah atas/bawah.</p>
+                </div>
+              </>
+            )}
+            {formStep === 3 && (
+              <>
+                <div>
+                  <p className="font-bold text-slate-700">💎 Poin Pengalaman (XP) & Koin</p>
+                  <p className="font-normal text-slate-500">XP digunakan pemain untuk menaikkan level karakter mereka, sedangkan Koin (NusaCoin) dapat digunakan untuk bertransaksi atau ditukarkan voucher.</p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">🎁 Lencana, Voucher & Bingkai</p>
+                  <p className="font-normal text-slate-500">Hadiah tambahan yang bersifat opsional:
+                    <br />• <b>Lencana:</b> Kenang-kenangan koleksi penghargaan yang dipajang di profil.
+                    <br />• <b>Voucher:</b> Potongan belanja nyata di UMKM mitra terkait.
+                    <br />• <b>Bingkai Foto Profil:</b> Bingkai dekoratif khusus untuk menghias foto profil pemain di papan peringkat (leaderboard) agar profil terlihat premium.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-bold text-slate-700">❓ Kuis Pengetahuan</p>
+                  <p className="font-normal text-slate-500">Hubungkan petualangan ini dengan kuis pengetahuan lokal yang harus dijawab pemain jika diperlukan.</p>
+                </div>
+              </>
+            )}
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button type="button" onClick={() => setHelpOpen(false)} className="h-9 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold cursor-pointer">
+              Saya Mengerti
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Full-image Preview Modal */}
       {previewImageUrl && (
         <Dialog open={!!previewImageUrl} onOpenChange={() => setPreviewImageUrl("")}>
-          <DialogContent className="max-w-4xl p-1 bg-black/90 border-0 flex items-center justify-center rounded-2xl overflow-hidden">
+          <DialogContent className="w-[92%] sm:max-w-4xl p-1 bg-black/90 border-0 flex items-center justify-center rounded-2xl overflow-hidden">
             <div className="relative w-full h-[80vh]">
               <button
                 type="button"
@@ -828,6 +945,6 @@ export default function QuestFormDialog({
           </DialogContent>
         </Dialog>
       )}
-    </Dialog>
+    </>
   );
 }

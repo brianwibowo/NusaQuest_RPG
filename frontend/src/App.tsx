@@ -34,6 +34,7 @@ import AdminStories from "@/pages/admin/AdminStories";
 import AdminUmkm from "@/pages/admin/AdminUmkm";
 import AdminSongs from "@/pages/admin/AdminSongs";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminProfile from "@/pages/admin/AdminProfile";
 
 // Guard: redirect to onboarding if not completed (waits for async loading)
 function RequireOnboarding({ children }: { children: React.ReactNode }) {
@@ -135,6 +136,7 @@ export default function App() {
           <Route path="umkm" element={<AdminUmkm />} />
           <Route path="songs" element={<AdminSongs />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="profile" element={<AdminProfile />} />
         </Route>
 
         {/* Fallback */}

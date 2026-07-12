@@ -19,6 +19,7 @@ interface AuthContextValue {
   signInWithGoogleToken: (idToken: string) => Promise<void>;
   signInWithMock: (email: string, name: string) => Promise<void>;
   signOut: () => void;
+  updateProfile: (name: string, avatarUrl: string | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -120,6 +121,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateProfile = async (name: string, avatarUrl: string | null) => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) throw new Error("No token found");
+
+    const res = await fetch("/api/auth/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name, avatarUrl }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Gagal memperbarui profil");
+    }
+
+    const data = await res.json();
+    setUser(data.user);
+  };
+
   const value: AuthContextValue = {
     user,
     isLoading,
@@ -129,6 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogleToken,
     signInWithMock,
     signOut,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

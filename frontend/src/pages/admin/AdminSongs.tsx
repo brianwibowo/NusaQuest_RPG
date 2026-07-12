@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit2, Trash2, Loader2, Play, Pause, X, HelpCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Play, Pause, X, HelpCircle, Eye, Music, Lock } from "lucide-react";
 import { useToast } from "@/context/ToastContext";
 import FieldGroup from "@/components/admin/FieldGroup";
 
@@ -21,6 +21,7 @@ export default function AdminSongs() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<SongItem | null>(null);
+  const [viewSong, setViewSong] = useState<SongItem | null>(null);
 
   // Form Fields
   const [name, setName] = useState("");
@@ -55,7 +56,7 @@ export default function AdminSongs() {
     },
     {
       title: "Tur Selesai! 🎉",
-      content: "Sekarang Anda siap mengelola Lagu Latar (BGM) NusaQuest. Selamat bekerja!",
+      content: "Sekarang Anda siap mengelola Lagu Latar (BGM) SinopiQuest. Selamat bekerja!",
       selector: null
     }
   ];
@@ -114,7 +115,7 @@ export default function AdminSongs() {
       highlighted.forEach(el => el.classList.remove("tour-highlighted"));
     };
   }, [tourActiveStep]);
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchSongs = () => {
@@ -269,7 +270,7 @@ export default function AdminSongs() {
   };
 
   // Reusable styles
-  const inputClass = "h-10 text-sm border-slate-200 bg-white text-slate-800 focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
+  const inputClass = "h-10 text-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-white focus-visible:ring-emerald-500 font-normal rounded-xl placeholder:text-slate-400";
 
   return (
     <div className="space-y-5 text-left animate-in fade-in duration-300">
@@ -291,64 +292,71 @@ export default function AdminSongs() {
       `}</style>
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div>
-          <h2 className="text-xl font-black text-slate-800 tracking-tight">Lagu Latar (BGM)</h2>
-          <p className="text-xs text-slate-400 mt-0.5 font-normal">
-            Setel lagu latar belakang yang diputar saat petualangan dimulai.
-            {" "}<span className="text-emerald-600 font-semibold">(Maksimal 2 lagu terdaftar)</span>
-          </p>
+      <div className="flex flex-col gap-3">
+        <div className="flex justify-between items-center gap-4 w-full">
+          <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">Lagu Latar (BGM)</h2>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              type="button"
+              onClick={() => setTourActiveStep(0)}
+              variant="outline"
+              className="h-9 w-9 sm:h-10 sm:w-10 p-0 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
+              title="Mulai Tur Fitur"
+            >
+              <HelpCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              id="add-song-btn"
+              onClick={handleOpenAdd}
+              disabled={songs.length >= 2}
+              className="h-9 sm:h-10 px-3.5 sm:px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-1.5 sm:gap-2 disabled:opacity-60 shadow-sm transition-all disabled:cursor-not-allowed select-none cursor-pointer"
+              title={songs.length >= 2 ? "Kuota lagu latar belakang sudah penuh (maksimal 2). Hapus salah satu lagu terlebih dahulu untuk menambahkan lagu baru." : "Tambah lagu latar belakang baru"}
+            >
+              {songs.length >= 2 ? (
+                <Lock className="h-3.5 w-3.5" />
+              ) : (
+                <Plus className="h-4 w-4" strokeWidth={3} />
+              )}
+              <span>
+                {songs.length >= 2 ? "Lagu Sudah Maksimal" : `Tambah Lagu (${songs.length}/2)`}
+              </span>
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            onClick={() => setTourActiveStep(0)}
-            variant="outline"
-            className="h-10 w-10 p-0 text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl shadow-sm transition-all flex items-center justify-center cursor-pointer"
-            title="Mulai Tur Fitur"
-          >
-            <HelpCircle className="h-4 w-4" />
-          </Button>
-          <Button
-            id="add-song-btn"
-            onClick={handleOpenAdd}
-            disabled={songs.length >= 2}
-            className="h-10 px-5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center gap-2 disabled:opacity-50 shadow-sm transition-all cursor-pointer"
-          >
-            <Plus className="h-4 w-4" strokeWidth={3} />
-            <span>Tambah Lagu ({songs.length}/2)</span>
-          </Button>
-        </div>
+        <p className="text-xs text-slate-400 dark:text-slate-500 font-normal leading-relaxed">
+          Setel lagu latar belakang yang diputar saat petualangan dimulai.
+          {" "}<span className="text-emerald-600 dark:text-emerald-400 font-semibold">(Maksimal 2 lagu terdaftar)</span>
+        </p>
       </div>
 
       {/* Grid */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="border border-slate-200/80 bg-white flex flex-col justify-between shadow-sm rounded-2xl overflow-hidden animate-pulse">
+            <div key={i} className="border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between shadow-sm rounded-2xl overflow-hidden animate-pulse">
               <CardContent className="p-5 flex items-center gap-4">
-                <div className="p-7 rounded-2xl bg-slate-100 border border-slate-200 shrink-0 h-14 w-14" />
+                <div className="p-7 rounded-2xl bg-slate-105 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 shrink-0 h-14 w-14" />
                 <div className="min-w-0 flex-1 space-y-2">
-                  <div className="h-4 bg-slate-200/70 rounded-md w-1/3" />
-                  <div className="h-3 bg-slate-200/70 rounded-md w-2/3" />
-                  <div className="h-4 bg-slate-100 rounded-md w-16" />
+                  <div className="h-4 bg-slate-200/70 dark:bg-slate-800 rounded-md w-1/3" />
+                  <div className="h-3 bg-slate-200/70 dark:bg-slate-800 rounded-md w-2/3" />
+                  <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-md w-16" />
                 </div>
               </CardContent>
               <div className="p-5 pt-0 flex gap-2">
-                <div className="h-9 bg-slate-100 rounded-lg flex-1" />
-                <div className="h-9 bg-slate-100 rounded-lg flex-1" />
+                <div className="h-9 bg-slate-101 dark:bg-slate-800 rounded-lg flex-1" />
+                <div className="h-9 bg-slate-101 dark:bg-slate-800 rounded-lg flex-1" />
               </div>
             </div>
           ))}
         </div>
       ) : songs.length === 0 ? (
-        <div className="py-16 px-4 text-center bg-white rounded-3xl border border-slate-200/85 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-          <div className="h-16 w-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-450 shadow-inner">
-            <Play className="h-7 w-7 text-slate-400 pl-0.5" />
+        <div className="py-16 px-4 text-center bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/85 dark:border-slate-800 shadow-sm max-w-md mx-auto my-8 flex flex-col items-center justify-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="h-16 w-16 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-400 shadow-inner">
+            <Play className="h-7 w-7 text-slate-400 dark:text-slate-500 pl-0.5" />
           </div>
           <div className="space-y-1.5 max-w-xs">
-            <h3 className="text-sm font-bold text-slate-800">Belum Ada Lagu BGM</h3>
-            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white">Belum Ada Lagu BGM</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
               Belum ada lagu latar belakang permainan yang didaftarkan di sistem. Mulai tambahkan dengan mengeklik tombol di atas.
             </p>
           </div>
@@ -356,32 +364,39 @@ export default function AdminSongs() {
       ) : (
         <div id="songs-grid" className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl">
           {songs.map((song) => (
-            <div key={song.id} className={`border border-slate-200/80 bg-white flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl overflow-hidden ${
-              song.isActive ? "ring-2 ring-emerald-500/20" : ""
-            }`}>
+            <div key={song.id} className={`border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col justify-between shadow-sm hover:shadow-lg transition-all duration-300 rounded-2xl overflow-hidden relative group ${song.isActive ? "ring-2 ring-emerald-500/20" : ""
+              }`}>
+              {/* View Detail button */}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setViewSong(song); }}
+                className="absolute top-3 right-3 z-30 p-2 bg-white/95 dark:bg-slate-800 hover:bg-emerald-600 text-slate-600 dark:text-slate-300 hover:text-white rounded-full shadow-md border border-slate-100/50 dark:border-slate-700/50 hover:border-emerald-600 hover:scale-105 transition-all duration-200 cursor-pointer"
+                title="Lihat Detail Selengkapnya"
+              >
+                <Eye className="h-3.5 w-3.5" />
+              </button>
               <CardContent className="p-5 flex items-center gap-4">
                 <button
                   type="button"
                   onClick={() => handleTogglePlay(song)}
-                  className={`p-4 rounded-2xl border transition-all hover:scale-105 shrink-0 ${
-                    playingSongId === song.id
-                      ? "text-rose-600 bg-rose-50 border-rose-100 shadow-md shadow-rose-500/10 animate-pulse"
+                  className={`p-4 rounded-2xl border transition-all hover:scale-105 shrink-0 ${playingSongId === song.id
+                      ? "text-rose-600 bg-rose-50 dark:bg-rose-950/40 border-rose-100 dark:border-rose-900/50 shadow-md shadow-rose-500/10 animate-pulse"
                       : song.isActive
-                      ? "text-emerald-600 bg-emerald-50 border-emerald-100 shadow-md shadow-emerald-500/10"
-                      : "text-slate-400 bg-slate-50 border-slate-200"
-                  }`}
+                        ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-100 dark:border-emerald-900/50 shadow-md shadow-emerald-500/10"
+                        : "text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                    }`}
                 >
                   {playingSongId === song.id ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
                 </button>
                 <div className="min-w-0 flex-1 space-y-1">
-                  <h3 className="text-sm font-bold text-slate-800 truncate leading-tight">{song.name}</h3>
-                  <span className="text-[10px] text-slate-400 block truncate font-normal leading-normal">{song.fileUrl}</span>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white truncate leading-tight">{song.name}</h3>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate font-normal leading-normal">{song.fileUrl}</span>
                   {song.isActive ? (
-                    <span className="inline-block bg-emerald-50 border border-emerald-200 text-emerald-700 text-[8px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1">
+                    <span className="inline-block bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900 text-emerald-700 dark:text-emerald-400 text-[8px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1">
                       Aktif Diputar
                     </span>
                   ) : (
-                    <span className="inline-block bg-slate-100 border border-slate-200 text-slate-400 text-[8px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1">
+                    <span className="inline-block bg-slate-105 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-400 text-[8px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-1">
                       Tidak Aktif
                     </span>
                   )}
@@ -392,7 +407,7 @@ export default function AdminSongs() {
                 <Button
                   onClick={() => handleOpenEdit(song)}
                   variant="outline"
-                  className="flex-1 h-9 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 bg-white rounded-lg"
+                  className="flex-1 h-9 text-xs font-semibold text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-850 flex items-center gap-1.5 bg-white dark:bg-slate-900 rounded-lg"
                 >
                   <Edit2 className="h-3.5 w-3.5" />
                   <span>Ubah</span>
@@ -400,7 +415,7 @@ export default function AdminSongs() {
                 <Button
                   onClick={() => setDeleteConfirmId(song.id)}
                   variant="ghost"
-                  className="flex-1 h-9 text-xs font-semibold text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center gap-1.5 rounded-lg"
+                  className="flex-1 h-9 text-xs font-semibold text-red-500 hover:text-red-650 hover:bg-red-50 dark:hover:bg-red-955/20 flex items-center gap-1.5 rounded-lg"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   <span>Hapus</span>
@@ -411,33 +426,87 @@ export default function AdminSongs() {
         </div>
       )}
 
+      {/* Detail View Modal */}
+      <Dialog open={!!viewSong} onOpenChange={(open) => !open && setViewSong(null)}>
+        {viewSong && (
+          <DialogContent className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white w-[92%] sm:max-w-md rounded-2xl shadow-2xl p-6 text-left">
+            <DialogHeader className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <DialogTitle className="text-base font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-1.5">
+                <Music className="h-4 w-4 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                <span>Detail Lagu Latar (BGM)</span>
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4 text-xs">
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">{viewSong.name}</h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">{viewSong.id}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <span className="text-slate-400 dark:text-slate-500 block font-normal">Status Putar</span>
+                  {viewSong.isActive ? (
+                    <span className="inline-block bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400 text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-0.5">
+                      Aktif Diputar
+                    </span>
+                  ) : (
+                    <span className="inline-block bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-440 text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md mt-0.5">
+                      Tidak Aktif
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-slate-400 dark:text-slate-500 block font-normal">Format File</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-300 block mt-0.5 uppercase">
+                    {viewSong.fileUrl.split(".").pop() || "Audio"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 space-y-2">
+                <span className="font-bold text-slate-700 dark:text-slate-300 text-[10px] uppercase tracking-wider block font-normal">🎵 Pemutar Lagu</span>
+                <audio controls className="w-full" src={viewSong.fileUrl} />
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate font-normal">{viewSong.fileUrl}</span>
+              </div>
+            </div>
+
+            <DialogFooter className="pt-4 border-t border-slate-100 mt-2">
+              <Button type="button" onClick={() => setViewSong(null)} className="h-9 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold cursor-pointer">
+                Tutup Detail
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        )}
+      </Dialog>
+
       {/* Dialog Form */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="bg-white border border-slate-200/80 text-slate-800 max-w-md rounded-2xl shadow-2xl p-6 gap-0">
+        <DialogContent className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white w-[92%] sm:max-w-md rounded-2xl shadow-2xl p-6 gap-0">
           <DialogHeader className="pb-4">
-            <DialogTitle className="text-lg font-black text-slate-800 tracking-tight">
+            <DialogTitle className="text-lg font-black text-slate-800 dark:text-white tracking-tight">
               {editingItem ? "Ubah Lagu BGM" : "Tambah Lagu BGM Baru"}
             </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <FieldGroup label="Nama Lagu" hint="Judul lagu latar belakang">
-              <Input 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                placeholder="contoh: Gamelan Rhapsody" 
-                required 
-                className={`${inputClass} ${wasValidated && !name.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+            <FieldGroup label="Nama Lagu" hint="Judul lagu latar belakang" required>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="contoh: Gamelan Rhapsody"
+                required
+                className={`${inputClass} ${wasValidated && !name.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
             </FieldGroup>
 
             <div className="grid grid-cols-1 gap-4">
               <FieldGroup label="Pilih Berkas Audio" hint="Unggah file .mp3 atau .ogg langsung dari komputer">
                 <div className="relative">
-                  <Input 
-                    type="file" 
-                    accept="audio/mpeg, audio/ogg, audio/mp3" 
-                    onChange={handleUploadAudio} 
+                  <Input
+                    type="file"
+                    accept="audio/mpeg, audio/ogg, audio/mp3"
+                    onChange={handleUploadAudio}
                     disabled={uploading}
                     className="h-10 text-sm border-slate-200 bg-white text-slate-800 font-normal rounded-xl file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700"
                   />
@@ -446,31 +515,31 @@ export default function AdminSongs() {
               </FieldGroup>
             </div>
 
-            <FieldGroup label="URL / Path Berkas Audio" hint="Terisi otomatis setelah file diunggah">
-              <Input 
-                value={fileUrl} 
-                onChange={(e) => setFileUrl(e.target.value)} 
-                placeholder="contoh: /api/uploads/songs/music.mp3" 
-                required 
-                className={`${inputClass} ${wasValidated && !fileUrl.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
+            <FieldGroup label="URL / Path Berkas Audio" hint="Terisi otomatis setelah file diunggah" required>
+              <Input
+                value={fileUrl}
+                onChange={(e) => setFileUrl(e.target.value)}
+                placeholder="contoh: /api/uploads/songs/music.mp3"
+                required
+                className={`${inputClass} ${wasValidated && !fileUrl.trim() ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
             </FieldGroup>
 
             {fileUrl && (
               <div className="space-y-1 mt-2">
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase">Tes Putar Musik</label>
-                <audio src={fileUrl} controls className="w-full h-10 rounded-lg bg-slate-50 border border-slate-200" />
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase">Tes Putar Musik</label>
+                <audio src={fileUrl} controls className="w-full h-10 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700" />
               </div>
             )}
 
-            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 mt-2">
+            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 mt-2">
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <Checkbox
                   checked={isActive}
                   onCheckedChange={(checked) => setIsActive(!!checked)}
-                  className="border-slate-300 bg-white data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+                  className="border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
                 />
-                <span className="text-slate-600 text-xs font-normal">Setel aktif diputar sekarang (Nonaktifkan lagu lainnya)</span>
+                <span className="text-slate-600 dark:text-slate-400 text-xs font-normal">Setel aktif diputar sekarang (Nonaktifkan lagu lainnya)</span>
               </label>
             </div>
 
@@ -480,7 +549,7 @@ export default function AdminSongs() {
               >
                 Batal
               </Button>
-              <Button 
+              <Button
                 type="submit"
                 disabled={uploading}
                 className="h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm rounded-xl"
@@ -495,25 +564,25 @@ export default function AdminSongs() {
 
       {/* Custom Delete Confirmation Modal */}
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
-        <DialogContent className="bg-white border border-slate-200/80 text-slate-800 max-w-sm rounded-2xl p-6 shadow-2xl text-left">
+        <DialogContent className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white w-[92%] sm:max-w-sm rounded-2xl p-6 shadow-2xl text-left">
           <DialogHeader>
-            <DialogTitle className="text-base font-black text-slate-800 tracking-tight">Hapus Lagu Latar?</DialogTitle>
+            <DialogTitle className="text-base font-black text-slate-800 dark:text-white tracking-tight">Hapus Lagu Latar?</DialogTitle>
           </DialogHeader>
           <div className="py-3">
-            <p className="text-xs text-slate-500 font-normal leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">
               Apakah Anda yakin ingin menghapus lagu latar belakang ini? Pemain tidak akan mendengarkan musik ini lagi saat memulai petualangan. Tindakan ini tidak dapat dibatalkan.
             </p>
           </div>
-          <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 mt-2 justify-end">
-            <Button 
-              type="button" 
-              variant="outline" 
+          <DialogFooter className="pt-4 flex gap-2 border-t border-slate-100 dark:border-slate-800 mt-2 justify-end">
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setDeleteConfirmId(null)}
-              className="h-9 px-4 text-xs font-semibold text-slate-500 border-slate-200 hover:bg-slate-50 bg-white rounded-xl"
+              className="h-9 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 bg-white dark:bg-slate-900 rounded-xl"
             >
               Batal
             </Button>
-            <Button 
+            <Button
               type="button"
               onClick={() => {
                 if (deleteConfirmId) {
@@ -540,17 +609,17 @@ export default function AdminSongs() {
           {/* Floating guide card positioned next to highlighted element */}
           <div
             style={tooltipStyle}
-            className="bg-white border border-slate-200/80 text-slate-800 rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
+            className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-800 dark:text-white rounded-2xl p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-left space-y-4 z-[9999]"
           >
             {/* Header / Step counter */}
             <div className="flex justify-between items-center">
-              <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
+              <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">
                 Petunjuk {tourActiveStep + 1} dari {tourSteps.length}
               </span>
               <button
                 type="button"
                 onClick={() => setTourActiveStep(null)}
-                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all p-1 rounded-full cursor-pointer flex items-center justify-center"
                 title="Tutup Tur"
               >
                 <X className="h-4 w-4" />
@@ -559,18 +628,18 @@ export default function AdminSongs() {
 
             {/* Title & Content */}
             <div className="space-y-2">
-              <h3 className="text-sm font-black text-slate-800 leading-snug">{tourSteps[tourActiveStep].title}</h3>
-              <p className="text-xs text-slate-500 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
+              <h3 className="text-sm font-black text-slate-800 dark:text-white leading-snug">{tourSteps[tourActiveStep].title}</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-normal leading-relaxed">{tourSteps[tourActiveStep].content}</p>
             </div>
 
             {/* Action buttons */}
-            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
               <Button
                 type="button"
                 variant="ghost"
                 disabled={tourActiveStep === 0}
                 onClick={() => setTourActiveStep(prev => prev! - 1)}
-                className="h-8 px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-50 rounded-lg cursor-pointer"
+                className="h-8 px-3 text-[10px] font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
               >
                 Sebelumnya
               </Button>
