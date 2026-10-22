@@ -10,6 +10,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
 import App from "./App";
 import "@/i18n";
+import "leaflet/dist/leaflet.css";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
